@@ -1,0 +1,607 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.breadcrumbLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.activePath {
+  color: var(--color-primary-container);
+}
+
+.breadcrumbRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.liveBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.ping {
+  position: relative;
+  display: flex;
+  height: 8px;
+  width: 8px;
+}
+
+.pingInner {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  position: absolute;
+  display: inline-flex;
+  height: 100%;
+  width: 100%;
+  border-radius: 9999px;
+  background: #34d399;
+  opacity: 0.75;
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.pingDot {
+  position: relative;
+  display: inline-flex;
+  border-radius: 9999px;
+  height: 8px;
+  width: 8px;
+  background: #10b981;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.chartColumn {
+  grid-column: span 12;
+}
+
+@media (min-width: 1024px) {
+  .chartColumn {
+    grid-column: span 8;
+  }
+}
+
+.chartCard {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-height: 500px;
+  padding: 32px;
+}
+
+.chartHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.chartTitleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pairLabel {
+  color: var(--color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.priceArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.price {
+  font-size: 48px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+.change {
+  color: #10b981;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.statsRow {
+  display: flex;
+  gap: 32px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.statLabel {
+  color: var(--color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.statValue {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.timer {
+  color: var(--color-primary-container);
+}
+
+.pool {
+  color: white;
+}
+
+.divider {
+  height: 40px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  align-self: center;
+}
+
+.chartArea {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  background: rgba(5, 7, 10, 0.4);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  padding: 16px;
+}
+
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+.chartControls {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+}
+
+.chartTab {
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.chartTab:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.activeTab {
+  background: var(--color-surface-container);
+  color: var(--color-primary-container);
+  border-color: rgba(0, 209, 255, 0.3);
+}
+
+.activityCard {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.participantsArea {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.avatarGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.avatarLabel {
+  color: var(--color-on-surface-variant);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.avatars {
+  display: flex;
+  margin-left: 8px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  border: 2px solid #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: -8px;
+}
+
+.avatarMain {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}
+
+.avatarSec {
+  background: #581c87;
+  color: #ddd6fe;
+}
+
+.avatarTer {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.avatarMore {
+  background: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+
+.predictionBox {
+  grid-column: span 12;
+}
+
+@media (min-width: 1024px) {
+  .predictionBox {
+    grid-column: span 4;
+  }
+}
+
+.predictCard {
+  border-color: rgba(0, 209, 255, 0.2);
+  box-shadow: 0 0 40px rgba(0, 209, 255, 0.05);
+  overflow: hidden;
+}
+
+.predictHeader {
+  background: rgba(0, 209, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 209, 255, 0.2);
+  padding: 24px 32px;
+}
+
+.predictTitle {
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--color-on-surface);
+}
+
+.predictSub {
+  color: var(--color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.predictForm {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inputLabel {
+  color: var(--color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.inputWrapper {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  background: rgba(5, 7, 10, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--color-on-surface);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  border-color: var(--color-primary-container);
+  box-shadow: 0 0 0 1px var(--color-primary-container);
+}
+
+.inputSuffix {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(0, 209, 255, 0.5);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.inputFooter {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+.available {
+  font-size: 10px;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.maxButton {
+  font-size: 10px;
+  color: var(--color-primary-container);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.summary {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+}
+
+.summaryValue {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.payout {
+  color: #10b981;
+}
+
+.confidence {
+  color: var(--color-primary-container);
+}
+
+.submitButton {
+  width: 100%;
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  font-weight: 900;
+  padding: 20px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+  box-shadow: 0 0 15px rgba(0, 209, 255, 0.4);
+}
+
+.submitButton:hover {
+  transform: scale(1.02);
+}
+
+.submitButton:active {
+  transform: scale(0.98);
+}
+
+.securityNote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(187, 201, 207, 0.4);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 8px;
+}
+
+.infoCard {
+  padding: 24px;
+  background: linear-gradient(to bottom right, rgba(0, 209, 255, 0.05), transparent);
+  border-color: rgba(0, 209, 255, 0.1);
+}
+
+.infoTitleArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.infoTitle {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-on-surface);
+}
+
+.infoList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.infoItem {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+.infoStep {
+  color: var(--color-primary-container);
+  font-weight: 700;
+}
+
+.ticker {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: rgba(5, 7, 10, 0.8);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 32px;
+  overflow: hidden;
+}
+
+.tickerContent {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.liveFeedLabelArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.liveFeedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--color-primary-container);
+}
+
+.liveFeedLabel {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-primary-container);
+}
+
+.marqueeContainer {
+  flex: 1;
+  overflow: hidden;
+}
+
+.marquee {
+  display: flex;
+  gap: 48px;
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+  white-space: nowrap;
+  width: fit-content;
+  animation: marquee 30s linear infinite;
+}
+
+.tickerItem {
+  display: flex;
+  items-center: center;
+  gap: 12px;
+}
+
+.tickerUser {
+  color: rgba(0, 209, 255, 0.6);
+  font-family: var(--font-mono);
+}
+
+.tickerAction {
+  color: white;
+  font-weight: 700;
+}
+
+.tickerDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+}

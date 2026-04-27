@@ -1,0 +1,112 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 256px;
+  background: rgba(11, 14, 20, 0.8);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+.content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.logo {
+  display: flex;
+  items-center: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.logoIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  background: linear-gradient(to top right, #06b6d4, #9333ea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.logoSub {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin-top: 4px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.navItem:hover {
+  color: var(--color-on-surface);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.activeNavItem {
+  background: rgba(0, 209, 255, 0.1);
+  color: var(--color-primary-container);
+  border-right: 2px solid var(--color-primary-container);
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+.actionButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 209, 255, 0.3);
+  color: var(--color-primary-container);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: background 0.2s;
+}
+
+.actionButton:hover {
+  background: rgba(0, 209, 255, 0.1);
+}

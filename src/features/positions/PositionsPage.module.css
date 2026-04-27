@@ -1,0 +1,457 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.titleGroup {
+  max-width: 600px;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.subTitle {
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.quickStats {
+  display: flex;
+  gap: 16px;
+}
+
+.quickStatCard {
+  padding: 12px 24px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.quickStatLabel {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.quickStatValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary-container);
+  font-family: var(--font-mono);
+  letter-spacing: -0.05em;
+}
+
+.positionsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 768px) {
+  .positionsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .positionsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Position Card Styles */
+.positionCard {
+  padding: 32px;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-left: 4px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.positionCard:hover {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.won { border-left-color: #10b981; box-shadow: 0 0 20px rgba(16, 185, 129, 0.1); }
+.lost { border-left-color: #f43f5e; box-shadow: 0 0 20px rgba(244, 63, 94, 0.1); }
+.pending { border-left-color: #eab308; box-shadow: 0 0 20px rgba(234, 179, 8, 0.1); }
+.open { border-left-color: var(--color-primary-container); box-shadow: 0 0 20px rgba(0, 209, 255, 0.1); }
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.roundId {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-family: var(--font-mono);
+  display: block;
+}
+
+.pairName {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  margin-top: 4px;
+}
+
+.pnlBadge {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.won.pnlBadge { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.lost.pnlBadge { background: rgba(244, 63, 94, 0.2); color: #f43f5e; }
+.pending.pnlBadge { background: rgba(234, 179, 8, 0.2); color: #eab308; }
+.open.pnlBadge { background: rgba(0, 209, 255, 0.2); color: var(--color-primary-container); }
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cardStatLabel {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+
+.cardStatValue {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  font-family: var(--font-mono);
+}
+
+.resultNotification {
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wonArea {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.resultLabel {
+  font-size: 9px;
+  font-weight: 900;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 4px;
+}
+
+.resultValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.claimButton {
+  background: var(--color-primary-container);
+  color: var(--color-on-surface-variant);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 10px 24px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0, 209, 255, 0.2);
+}
+
+.claimButton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.claimButton:active {
+  transform: translateY(0);
+}
+
+.expiryNote {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.expiryPrice {
+  color: white;
+  font-style: normal;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.timerArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.timerIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--color-primary-container);
+}
+
+.pendingArea {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pendingPulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #eab308;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pendingLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #eab308;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.newPredictionCard {
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  min-height: 250px;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.newPredictionCard:hover {
+  border-color: rgba(0, 209, 255, 0.4);
+  background: rgba(0, 209, 255, 0.05);
+}
+
+.plusIconArea {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: all 0.3s;
+}
+
+.newPredictionCard:hover .plusIconArea {
+  background: rgba(0, 209, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.plusIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary-container);
+}
+
+.newPredictTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.newPredictSub {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* Ledger Section */
+.ledgerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ledgerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ledgerTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.01em;
+}
+
+.exportButton {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--color-primary-container);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.exportButton:hover {
+  text-decoration: underline;
+}
+
+.exportIcon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.2s;
+}
+
+.exportButton:hover .exportIcon {
+  transform: translateY(2px);
+}
+
+.tableContainer {
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tableHead {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.th {
+  padding: 20px 32px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--color-on-surface-variant);
+}
+
+.alignRight {
+  text-align: right;
+}
+
+.tableRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: background 0.2s;
+}
+
+.tableRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.td {
+  padding: 20px 32px;
+}
+
+.timestampCell {
+  padding: 20px 32px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-on-surface-variant);
+}
+
+.assetCell {
+  padding: 20px 32px;
+  font-weight: 700;
+  color: white;
+}
+
+.sentimentText {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bullish { color: var(--color-primary-container); }
+.bearish { color: #f43f5e; }
+
+.outcomeText {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.success { color: #10b981; }
+.fail { color: #f43f5e; }
+
+.yieldCell {
+  padding: 20px 32px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #10b981;
+}

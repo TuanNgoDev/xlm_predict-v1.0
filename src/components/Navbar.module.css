@@ -1,0 +1,125 @@
+.header {
+  background: rgba(5, 7, 10, 0.6);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  width: 100%;
+  backdrop-saturate: 150%;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  color: var(--color-primary-container);
+  filter: drop-shadow(0 0 8px rgba(0, 209, 255, 0.5));
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+  }
+}
+
+.navItem {
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: var(--color-on-surface-variant);
+  transition: color 0.2s;
+  padding-bottom: 4px;
+}
+
+.navItem:hover {
+  color: white;
+}
+
+.activeNavItem {
+  color: var(--color-primary-container);
+  border-bottom: 2px solid var(--color-primary-container);
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.balance {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 640px) {
+  .balance {
+    display: none;
+  }
+}
+
+.balanceIcon {
+  color: var(--color-primary-container);
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.balanceText {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-on-surface);
+}
+
+.connectButton {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  font-weight: 700;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: transform 0.2s;
+  box-shadow: 0 0 15px rgba(0, 209, 255, 0.4);
+}
+
+.connectButton:hover {
+  transform: scale(1.05);
+}
+
+.iconButton {
+  color: var(--color-on-surface-variant);
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconButton:hover {
+  color: white;
+}
+
+@media (min-width: 769px) {
+  .menuButton {
+    display: none;
+  }
+}

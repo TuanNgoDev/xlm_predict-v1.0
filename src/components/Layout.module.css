@@ -1,0 +1,56 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+}
+
+.main {
+  flex: 1;
+  padding: 32px;
+  overflow: hidden;
+}
+
+.glowContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.glowOne {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  padding: 32px;
+  opacity: 0.2;
+}
+
+.glowOneInner {
+  width: 256px;
+  height: 256px;
+  background: rgba(0, 209, 255, 0.2);
+  filter: blur(100px);
+  border-radius: 9999px;
+}
+
+.glowTwo {
+  position: fixed;
+  top: 80px;
+  left: 256px;
+  padding: 32px;
+  opacity: 0.1;
+}
+
+.glowTwoInner {
+  width: 384px;
+  height: 384px;
+  background: rgba(147, 51, 234, 0.2);
+  filter: blur(120px);
+  border-radius: 9999px;
+}

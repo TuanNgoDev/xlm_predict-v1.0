@@ -1,0 +1,451 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .header {
+    flex-direction: row;
+  }
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  font-size: 48px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  color: var(--color-on-surface-variant);
+  max-width: 576px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .controls {
+    width: auto;
+  }
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+}
+
+@media (min-width: 768px) {
+  .searchBox {
+    width: 320px;
+  }
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-on-surface-variant);
+  width: 16px;
+  height: 16px;
+}
+
+.searchInput {
+  width: 100%;
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 8px;
+  padding: 8px 16px 8px 40px;
+  font-size: 14px;
+  color: white;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary-container);
+  box-shadow: 0 0 0 1px var(--color-primary-container);
+}
+
+.filterButton {
+  background: var(--color-surface-container-high);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.filterButton:hover {
+  background: var(--color-surface-variant);
+}
+
+.filterIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-on-surface-variant);
+}
+
+.filterLabel {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 768px) {
+  .statsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.statCard {
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 128px;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-on-surface-variant);
+}
+
+.statValueArea {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.statUnit {
+  color: var(--color-primary-container);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.liveBadge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sentimentCard {
+  background: linear-gradient(to bottom right, rgba(8, 145, 178, 0.2), rgba(147, 51, 234, 0.2));
+  border: none;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sentimentTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.sentimentBar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  height: 8px;
+  border-radius: 9999px;
+  display: flex;
+  overflow: hidden;
+}
+
+.sentimentBullish {
+  width: 67%;
+  background: var(--color-primary-container);
+}
+
+.sentimentBearish {
+  width: 33%;
+  background: var(--color-error);
+}
+
+.sentimentLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.leaderboardTableContainer {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.tableHead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tableHeadCell {
+  padding: 16px 24px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.tableRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s;
+}
+
+.tableRow:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.userRow {
+  background: rgba(0, 209, 255, 0.05);
+  border-top: 1px solid rgba(0, 209, 255, 0.3);
+  border-bottom: 1px solid rgba(0, 209, 255, 0.3);
+}
+
+.tableCell {
+  padding: 20px 24px;
+}
+
+.rankCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rankIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.rankNumber {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: white;
+}
+
+.userRankNumber {
+  color: var(--color-primary-container);
+}
+
+.participantCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--color-surface-container-high);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarPlaceholder {
+  font-size: 10px;
+  color: var(--color-primary-container);
+  font-weight: 700;
+}
+
+.participantInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.walletAddress {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: white;
+}
+
+.userWalletAddress {
+  color: var(--color-primary-container);
+  font-weight: 700;
+}
+
+.userSub {
+  font-size: 10px;
+  color: rgba(0, 209, 255, 0.6);
+  font-weight: 500;
+}
+
+.predictionCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.predictionValue {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.bullish {
+  color: var(--color-primary-container);
+}
+
+.bearish {
+  color: var(--color-error);
+}
+
+.sentimentTag {
+  font-size: 10px;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+}
+
+.stakeCell {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: white;
+  text-align: right;
+}
+
+.timestampCell {
+  text-align: right;
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+.statusCell {
+  display: flex;
+  justify-content: center;
+}
+
+.live {
+  color: var(--color-primary-container);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.locked {
+  color: rgba(187, 201, 207, 0.4);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.pagination {
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 640px) {
+  .pagination {
+    flex-direction: row;
+  }
+}
+
+.paginationInfo {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+}
+
+.bold {
+  color: white;
+  font-weight: 700;
+}
+
+.paginationButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  transition: all 0.2s;
+}
+
+.pageButton:hover:not(.activePage):not(.ellipsis) {
+  color: white;
+}
+
+.activePage {
+  background: rgba(0, 209, 255, 0.2);
+  border-color: rgba(0, 209, 255, 0.3);
+  color: var(--color-primary-container);
+}
+
+.ellipsis {
+  border-color: transparent;
+  color: rgba(187, 201, 207, 0.4);
+  cursor: default;
+}
