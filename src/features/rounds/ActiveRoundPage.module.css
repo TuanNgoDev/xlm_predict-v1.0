@@ -240,27 +240,13 @@
 }
 
 /* =============================================
-   Chart Area
+   Chart Area  (now wraps TradingView widget)
    ============================================= */
 .chartArea {
   position: relative;
   width: 100%;
-  height: 320px;
-  background: rgba(5, 7, 10, 0.45);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
-}
-
-.gridOverlay {
-  position: absolute;
-  inset: 0;
-  opacity: 0.07;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px);
-  background-size: 40px 40px;
 }
 
 .chartControls {
@@ -273,56 +259,94 @@
 }
 
 .chartTab {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(9, 11, 17, 0.88);
   color: var(--color-on-surface-variant);
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   transition: all 0.2s;
   cursor: pointer;
+  backdrop-filter: blur(6px);
 }
 
 .chartTab:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
 
 .activeTab {
-  background: rgba(0, 209, 255, 0.12);
+  background: rgba(0, 209, 255, 0.15);
   color: var(--color-primary-container);
-  border-color: rgba(0, 209, 255, 0.35);
+  border-color: rgba(0, 209, 255, 0.4);
 }
 
-.chartInner {
-  position: absolute;
-  inset: 0;
+/* =============================================
+   Live Price Badge
+   ============================================= */
+.livePriceBadge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-/* Recharts tooltip */
-.chartTooltip {
-  background: rgba(20, 25, 35, 0.95);
-  border: 1px solid rgba(0, 209, 255, 0.2);
+.changeBear {
+  color: #f43f5e !important;
+  background: rgba(244, 63, 94, 0.12) !important;
+  border-color: rgba(244, 63, 94, 0.2) !important;
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
-  padding: 8px 14px;
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(0, 209, 255, 0.6);
+  transition: all 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.chartTooltipLabel {
-  font-size: 10px;
-  color: var(--color-on-surface-variant);
+.refreshBtn:hover {
+  background: rgba(0, 209, 255, 0.12);
+  border-color: rgba(0, 209, 255, 0.35);
+  color: var(--color-primary-container);
+}
+
+.refreshBtnSpin svg {
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.lastUpdated {
+  font-size: 9px;
+  color: rgba(187, 201, 207, 0.35);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 2px;
 }
 
-.chartTooltipValue {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 700;
+.currentPriceHint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: rgba(0, 209, 255, 0.55);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.currentPriceHint strong {
   color: var(--color-primary-container);
+  font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 /* =============================================

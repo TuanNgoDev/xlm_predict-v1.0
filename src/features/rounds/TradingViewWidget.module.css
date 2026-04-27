@@ -1,0 +1,44 @@
+/* TradingView Widget wrapper */
+.wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #090b11;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.tvContainer {
+  width: 100%;
+  height: 100%;
+}
+
+/* TradingView injects an iframe; ensure it fills the container */
+.tvContainer :global(iframe) {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+}
+
+/* Loading skeleton shimmer while widget bootstraps */
+.wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronRight,
@@ -10,50 +12,39 @@ import {
   Users,
   Target,
   Zap,
+  RefreshCw,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
 import { activeRound } from '../../services/mockData';
-import { cn, formatCurrency } from '../../lib/utils';
+import { cn } from '../../lib/utils';
+import { TradingViewWidget } from './TradingViewWidget';
 
 import styles from './ActiveRoundPage.module.css';
 
-// --- Chart Data ---
-const chartData = [
-  { time: '00:00', price: 0.1310 },
-  { time: '01:00', price: 0.1315 },
-  { time: '02:00', price: 0.1312 },
-  { time: '03:00', price: 0.1320 },
-  { time: '04:00', price: 0.1318 },
-  { time: '05:00', price: 0.1325 },
-  { time: '06:00', price: 0.1322 },
-  { time: '07:00', price: 0.1324 },
-];
-
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 const TOTAL_DURATION_SECS = 4 * 3600 + 22 * 60 + 15;
 const AVAILABLE_XLM = 12.5;
 const POOL_MULTIPLIER = 4.25;
 
-// --- Sub-components ---
+// CoinGecko public endpoint — no API key required
+const COINGECKO_URL =
+  'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd&include_24hr_change=true';
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className={styles.chartTooltip}>
-        <p className={styles.chartTooltipLabel}>{label}</p>
-        <p className={styles.chartTooltipValue}>${payload[0].value.toFixed(4)}</p>
-      </div>
-    );
-  }
-  return null;
-};
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+type Interval = '1H' | '4H' | '1D';
+
+interface LivePrice {
+  price: number;
+  change24h: number;
+  lastUpdated: Date;
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
 
 interface DistBarProps {
   label: string;
@@ -149,20 +140,107 @@ const ConfidenceFill = ({ pct, color }: ConfidenceFillProps) => {
   );
 };
 
-// --- Main Page ---
+// ---------------------------------------------------------------------------
+// Live Price Badge
+// ---------------------------------------------------------------------------
+interface LivePriceBadgeProps {
+  live: LivePrice | null;
+  loading: boolean;
+  onRefresh: () => void;
+}
+
+const LivePriceBadge = ({ live, loading, onRefresh }: LivePriceBadgeProps) => {
+  const isPositive = !live || live.change24h >= 0;
+  const displayPrice = live ? live.price.toFixed(5) : activeRound.currentPrice.toString();
+  const displayChange = live ? live.change24h.toFixed(2) : activeRound.priceChange.toString();
+
+  return (
+    <div className={styles.livePriceBadge}>
+      <div className={styles.priceArea}>
+        <span className={styles.price}>${displayPrice}</span>
+        <span className={cn(styles.change, !isPositive && styles.changeBear)}>
+          {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+          {isPositive ? '+' : ''}{displayChange}%
+        </span>
+      </div>
+      <button
+        className={cn(styles.refreshBtn, loading && styles.refreshBtnSpin)}
+        onClick={onRefresh}
+        title="Refresh live price"
+        aria-label="Refresh live price"
+      >
+        <RefreshCw size={13} />
+      </button>
+      {live && (
+        <span className={styles.lastUpdated}>
+          Updated {live.lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        </span>
+      )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Main Page
+// ---------------------------------------------------------------------------
 
 export const ActiveRoundPage = () => {
   const [timeLeft, setTimeLeft] = useState(TOTAL_DURATION_SECS);
-  const [activeTab, setActiveTab] = useState<'1H' | '4H' | '1D'>('1H');
+  const [activeTab, setActiveTab] = useState<Interval>('1H');
   const [prediction, setPrediction] = useState('');
   const [stake, setStake] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [mounted, setMounted] = useState(false);
 
+  // Live price state
+  const [livePrice, setLivePrice] = useState<LivePrice | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // ── Fetch live price from CoinGecko ──────────────────────────────────────
+  const fetchLivePrice = useCallback(async () => {
+    setPriceLoading(true);
+    try {
+      const res = await fetch(COINGECKO_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      setLivePrice({
+        price: data.stellar.usd,
+        change24h: data.stellar.usd_24h_change,
+        lastUpdated: new Date(),
+      });
+    } catch {
+      // silently keep previous value
+    } finally {
+      setPriceLoading(false);
+    }
+  }, []);
+
+  // Fetch immediately on mount, then every 30s
+  useEffect(() => {
+    fetchLivePrice();
+    const interval = setInterval(fetchLivePrice, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchLivePrice]);
+
+  // ── Countdown ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (timeLeft <= 0) return;
+    const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [timeLeft]);
+
+  const formatTime = (secs: number) => {
+    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+
+  // ── Derived state ─────────────────────────────────────────────────────────
   const stakeNum = parseFloat(stake) || 0;
   const estimatedPayout = stakeNum > 0 ? stakeNum * POOL_MULTIPLIER : 0;
   const confidence =
@@ -186,24 +264,7 @@ export const ActiveRoundPage = () => {
       ? 'High'
       : 'Very High';
   const confidenceColor =
-    confidence < 40
-      ? '#f43f5e'
-      : confidence < 65
-      ? '#eab308'
-      : '#10b981';
-
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(id);
-  }, [timeLeft]);
-
-  const formatTime = (secs: number) => {
-    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
-    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
-  };
+    confidence < 40 ? '#f43f5e' : confidence < 65 ? '#eab308' : '#10b981';
 
   const handleMaxStake = () => setStake(AVAILABLE_XLM.toString());
 
@@ -214,21 +275,19 @@ export const ActiveRoundPage = () => {
   }, [prediction, stake, stakeNum]);
 
   const canSubmit =
-    prediction !== '' &&
-    stakeNum > 0 &&
-    stakeNum <= AVAILABLE_XLM &&
-    timeLeft > 0;
+    prediction !== '' && stakeNum > 0 && stakeNum <= AVAILABLE_XLM && timeLeft > 0;
 
+  const currentPrice = livePrice?.price ?? activeRound.currentPrice;
   const predNum = parseFloat(prediction);
-  const sentiment =
-    !prediction
-      ? null
-      : predNum > activeRound.currentPrice
-      ? 'bull'
-      : predNum < activeRound.currentPrice
-      ? 'bear'
-      : 'neutral';
+  const sentiment = !prediction
+    ? null
+    : predNum > currentPrice
+    ? 'bull'
+    : predNum < currentPrice
+    ? 'bear'
+    : 'neutral';
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={cn(styles.container, mounted && styles.containerMounted)}>
       {/* Breadcrumb / Status */}
@@ -250,24 +309,18 @@ export const ActiveRoundPage = () => {
       </div>
 
       <div className={styles.mainGrid}>
-        {/* LEFT: Chart & Market Data */}
+        {/* ── LEFT: Chart & Market Data ── */}
         <div className={styles.chartColumn}>
           {/* Chart Card */}
           <div className={cn('glass-card', styles.chartCard)}>
             <div className={styles.chartHeader}>
               <div className={styles.chartTitleArea}>
-                <h2 className={styles.pairLabel}>XLM/USD Pair</h2>
-                <div className={styles.priceArea}>
-                  <span className={styles.price}>${activeRound.currentPrice}</span>
-                  <span className={styles.change}>
-                    {activeRound.priceChange >= 0 ? (
-                      <ArrowUpRight className="w-4 h-4" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4" />
-                    )}
-                    {activeRound.priceChange >= 0 ? '+' : ''}{activeRound.priceChange}%
-                  </span>
-                </div>
+                <h2 className={styles.pairLabel}>XLM / USDT · Live Chart</h2>
+                <LivePriceBadge
+                  live={livePrice}
+                  loading={priceLoading}
+                  onRefresh={fetchLivePrice}
+                />
               </div>
               <div className={styles.statsRow}>
                 <div className={styles.statItem}>
@@ -292,12 +345,11 @@ export const ActiveRoundPage = () => {
               </div>
             </div>
 
-            {/* Price Chart */}
+            {/* ── TradingView Chart ── */}
             <div className={styles.chartArea}>
-              <div className={styles.gridOverlay}></div>
-
+              {/* Interval switcher (overlay) */}
               <div className={styles.chartControls}>
-                {(['1H', '4H', '1D'] as const).map((tab) => (
+                {(['1H', '4H', '1D'] as Interval[]).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -308,51 +360,7 @@ export const ActiveRoundPage = () => {
                 ))}
               </div>
 
-              <div className={styles.chartInner}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={chartData}
-                    margin={{ top: 40, right: 16, left: 4, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#00d1ff" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#00d1ff" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fill: 'rgba(187,201,207,0.5)', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={['auto', 'auto']}
-                      tickFormatter={(v: number) => `$${v.toFixed(3)}`}
-                      tick={{ fill: 'rgba(187,201,207,0.5)', fontSize: 10 }}
-                      axisLine={false}
-                      tickLine={false}
-                      width={58}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <ReferenceLine
-                      y={activeRound.currentPrice}
-                      stroke="rgba(0,209,255,0.3)"
-                      strokeDasharray="4 4"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="price"
-                      stroke="#00d1ff"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#colorPrice)"
-                      dot={false}
-                      activeDot={{ r: 5, fill: '#00d1ff', strokeWidth: 2, stroke: '#0b0e14' }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <TradingViewWidget interval={activeTab} height={340} />
             </div>
           </div>
 
@@ -402,7 +410,7 @@ export const ActiveRoundPage = () => {
           </div>
         </div>
 
-        {/* RIGHT: Prediction Box */}
+        {/* ── RIGHT: Prediction Box ── */}
         <div className={styles.predictionBox}>
           {/* Predict Card */}
           <div className={cn('glass-card', styles.predictCard)}>
@@ -412,6 +420,13 @@ export const ActiveRoundPage = () => {
                 Round closes in{' '}
                 <span className={styles.timerInline}>{formatTime(timeLeft)}</span>
               </p>
+
+              {/* Live price hint */}
+              {livePrice && (
+                <div className={styles.currentPriceHint}>
+                  Current: <strong>${livePrice.price.toFixed(5)}</strong>
+                </div>
+              )}
             </div>
 
             <div className={styles.predictForm}>
@@ -421,7 +436,7 @@ export const ActiveRoundPage = () => {
                 <div className={styles.inputWrapper}>
                   <input
                     className={styles.input}
-                    placeholder="0.1350"
+                    placeholder={livePrice ? livePrice.price.toFixed(4) : '0.1350'}
                     type="number"
                     step="0.0001"
                     min="0"
@@ -566,7 +581,9 @@ export const ActiveRoundPage = () => {
                   </div>
                   <div className={styles.tickerItem}>
                     <span className={styles.tickerUser}>stellar_pro</span>
-                    <span>predicted <span className={styles.tickerAction}>$0.1341</span></span>
+                    <span>predicted <span className={styles.tickerAction}>
+                      {livePrice ? `$${(livePrice.price * 1.01).toFixed(4)}` : '$0.1341'}
+                    </span></span>
                     <span className={styles.tickerDot}></span>
                   </div>
                   <div className={styles.tickerItem}>
@@ -576,7 +593,9 @@ export const ActiveRoundPage = () => {
                   </div>
                   <div className={styles.tickerItem}>
                     <span className={styles.tickerUser}>moon_shot</span>
-                    <span>predicted <span className={styles.tickerAction}>$0.1450</span></span>
+                    <span>predicted <span className={styles.tickerAction}>
+                      {livePrice ? `$${(livePrice.price * 1.05).toFixed(4)}` : '$0.1450'}
+                    </span></span>
                     <span className={styles.tickerDot}></span>
                   </div>
                 </React.Fragment>
