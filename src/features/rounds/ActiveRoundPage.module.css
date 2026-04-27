@@ -1,9 +1,24 @@
+/* =============================================
+   Container & Layout
+   ============================================= */
 .container {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-bottom: 64px; /* clearance for ticker */
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
 }
 
+.containerMounted {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* =============================================
+   Breadcrumb
+   ============================================= */
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -15,14 +30,16 @@
   align-items: center;
   gap: 8px;
   color: var(--color-on-surface-variant);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  opacity: 0.7;
 }
 
 .activePath {
   color: var(--color-primary-container);
+  opacity: 1;
 }
 
 .breadcrumbRight {
@@ -37,13 +54,13 @@
   gap: 8px;
   background: rgba(16, 185, 129, 0.1);
   color: #10b981;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 9999px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
 }
 
 .ping {
@@ -54,7 +71,7 @@
 }
 
 .pingInner {
-  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
   position: absolute;
   display: inline-flex;
   height: 100%;
@@ -80,14 +97,21 @@
   background: #10b981;
 }
 
+/* =============================================
+   Grid
+   ============================================= */
 .mainGrid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 24px;
+  align-items: start;
 }
 
 .chartColumn {
   grid-column: span 12;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 @media (min-width: 1024px) {
@@ -96,12 +120,15 @@
   }
 }
 
+/* =============================================
+   Chart Card
+   ============================================= */
 .chartCard {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  min-height: 500px;
-  padding: 32px;
+  gap: 24px;
+  padding: 28px 28px 20px;
+  border-radius: 16px;
 }
 
 .chartHeader {
@@ -115,7 +142,7 @@
 .chartTitleArea {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .pairLabel {
@@ -123,64 +150,85 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  opacity: 0.7;
 }
 
 .priceArea {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .price {
-  font-size: 48px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: -0.02em;
+  font-size: 44px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 .change {
   color: #10b981;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 13px;
   display: flex;
   align-items: center;
   gap: 4px;
   font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .statsRow {
   display: flex;
-  gap: 32px;
+  gap: 24px;
+  align-items: center;
 }
 
 .statItem {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 4px;
 }
 
 .statLabel {
   color: var(--color-on-surface-variant);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
 }
 
 .statValue {
   font-family: var(--font-mono);
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .timer {
   color: var(--color-primary-container);
+  text-shadow: 0 0 12px rgba(0, 209, 255, 0.4);
+}
+
+.timerUrgent {
+  color: #f43f5e;
+  animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .pool {
-  color: white;
+  color: #fff;
 }
 
 .divider {
@@ -188,73 +236,210 @@
   width: 1px;
   background: rgba(255, 255, 255, 0.1);
   align-self: center;
+  flex-shrink: 0;
 }
 
+/* =============================================
+   Chart Area
+   ============================================= */
 .chartArea {
   position: relative;
   width: 100%;
-  flex: 1;
-  background: rgba(5, 7, 10, 0.4);
+  height: 320px;
+  background: rgba(5, 7, 10, 0.45);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
-  padding: 16px;
 }
 
 .gridOverlay {
   position: absolute;
   inset: 0;
-  opacity: 0.1;
+  opacity: 0.07;
   pointer-events: none;
-  background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0);
-  background-size: 32px 32px;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.15) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .chartControls {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 12px;
+  left: 12px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  z-index: 10;
 }
 
 .chartTab {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--color-on-surface-variant);
   padding: 4px 12px;
   border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .chartTab:hover {
   border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .activeTab {
-  background: var(--color-surface-container);
+  background: rgba(0, 209, 255, 0.12);
   color: var(--color-primary-container);
-  border-color: rgba(0, 209, 255, 0.3);
+  border-color: rgba(0, 209, 255, 0.35);
 }
 
+.chartInner {
+  position: absolute;
+  inset: 0;
+}
+
+/* Recharts tooltip */
+.chartTooltip {
+  background: rgba(20, 25, 35, 0.95);
+  border: 1px solid rgba(0, 209, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 14px;
+  backdrop-filter: blur(8px);
+}
+
+.chartTooltipLabel {
+  font-size: 10px;
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 2px;
+}
+
+.chartTooltipValue {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-primary-container);
+}
+
+/* =============================================
+   Prediction Distribution
+   ============================================= */
+.distCard {
+  background: rgba(22, 28, 38, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 20px 24px;
+}
+
+.distHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.distIcon {
+  color: var(--color-primary-container);
+}
+
+.distTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-on-surface);
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.distParticipants {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.distBars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.distRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.distLabel {
+  font-size: 10px;
+  color: var(--color-on-surface-variant);
+  font-weight: 600;
+  width: 110px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.distBarTrack {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.distBarFill {
+  height: 100%;
+  background: rgba(0, 209, 255, 0.4);
+  border-radius: 4px;
+}
+
+.distBarPeak {
+  background: var(--color-primary-container);
+  box-shadow: 0 0 8px rgba(0, 209, 255, 0.5);
+}
+
+.distPct {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* =============================================
+   Activity Card
+   ============================================= */
 .activityCard {
-  padding: 24px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-radius: 16px;
 }
 
 .participantsArea {
   display: flex;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
 .avatarGroup {
   display: flex;
   flex-direction: column;
+  gap: 8px;
 }
 
 .avatarLabel {
@@ -263,8 +448,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  margin-bottom: 8px;
   line-height: 1;
+  opacity: 0.7;
 }
 
 .avatars {
@@ -281,8 +466,14 @@
   align-items: center;
   justify-content: center;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   margin-left: -8px;
+  transition: transform 0.2s;
+}
+
+.avatar:hover {
+  transform: translateY(-2px);
+  z-index: 1;
 }
 
 .avatarMain {
@@ -305,8 +496,32 @@
   color: var(--color-on-surface-variant);
 }
 
+.detailButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary-container);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.detailButton:hover {
+  filter: brightness(1.3);
+  gap: 10px;
+}
+
+/* =============================================
+   Prediction Box (Right Column)
+   ============================================= */
 .predictionBox {
   grid-column: span 12;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 @media (min-width: 1024px) {
@@ -315,21 +530,23 @@
   }
 }
 
+/* Predict Card */
 .predictCard {
   border-color: rgba(0, 209, 255, 0.2);
   box-shadow: 0 0 40px rgba(0, 209, 255, 0.05);
   overflow: hidden;
+  border-radius: 16px;
 }
 
 .predictHeader {
-  background: rgba(0, 209, 255, 0.1);
-  border-bottom: 1px solid rgba(0, 209, 255, 0.2);
-  padding: 24px 32px;
+  background: rgba(0, 209, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 209, 255, 0.15);
+  padding: 20px 24px;
 }
 
 .predictTitle {
-  font-weight: 700;
-  font-size: 20px;
+  font-weight: 800;
+  font-size: 18px;
   color: var(--color-on-surface);
 }
 
@@ -338,17 +555,32 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   margin-top: 4px;
+  opacity: 0.7;
+}
+
+.predictSubUrgent {
+  color: #f43f5e !important;
+  opacity: 1 !important;
+}
+
+.timerInline {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-primary-container);
 }
 
 .predictForm {
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
+/* =============================================
+   Form Inputs
+   ============================================= */
 .inputGroup {
   display: flex;
   flex-direction: column;
@@ -360,7 +592,8 @@
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  opacity: 0.8;
 }
 
 .inputWrapper {
@@ -372,42 +605,56 @@
   background: rgba(5, 7, 10, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  padding: 16px 20px;
+  padding: 14px 52px 14px 16px;
   font-family: var(--font-mono);
-  font-size: 20px;
+  font-size: 22px;
+  font-weight: 700;
   color: var(--color-on-surface);
   outline: none;
   transition: all 0.2s;
+  font-variant-numeric: tabular-nums;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.1);
 }
 
 .input:focus {
   border-color: var(--color-primary-container);
-  box-shadow: 0 0 0 1px var(--color-primary-container);
+  box-shadow: 0 0 0 1px rgba(0, 209, 255, 0.3);
+}
+
+.inputError {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.3) !important;
 }
 
 .inputSuffix {
   position: absolute;
-  right: 20px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(0, 209, 255, 0.5);
+  color: rgba(0, 209, 255, 0.45);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  pointer-events: none;
 }
 
 .inputFooter {
   display: flex;
   justify-content: space-between;
-  margin-top: 4px;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .available {
   font-size: 10px;
   color: var(--color-on-surface-variant);
   text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
 }
 
 .maxButton {
@@ -416,15 +663,117 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  transition: all 0.2s;
 }
 
-.summary {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 16px;
+.maxButton:hover {
+  text-decoration: underline;
+  filter: brightness(1.2);
+}
+
+.errorMsg {
+  font-size: 11px;
+  color: #f43f5e;
+  font-weight: 600;
+}
+
+/* Prediction hint (bull/bear) */
+.predictionHint {
+  display: flex;
+  align-items: center;
+}
+
+.hintBull {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.hintBear {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.1);
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.hintNeutral {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+  opacity: 0.7;
+  padding: 4px 10px;
+}
+
+/* =============================================
+   Confidence Meter
+   ============================================= */
+.confidenceMeter {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+}
+
+.confidenceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.confidenceLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.confidenceValue {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.confidenceTrack {
+  width: 100%;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidenceFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: background 0.4s;
+}
+
+/* =============================================
+   Summary Box
+   ============================================= */
+.summary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .summaryRow {
@@ -437,79 +786,103 @@
   font-size: 12px;
   color: var(--color-on-surface-variant);
   font-weight: 500;
+  opacity: 0.8;
 }
 
 .summaryValue {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.summaryDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .payout {
   color: #10b981;
 }
 
-.confidence {
-  color: var(--color-primary-container);
-}
-
+/* =============================================
+   Submit Button
+   ============================================= */
 .submitButton {
   width: 100%;
   background: var(--color-primary-container);
   color: var(--color-on-primary-container);
   font-weight: 900;
-  padding: 20px;
+  padding: 18px;
   border-radius: 12px;
+  font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: all 0.2s;
-  box-shadow: 0 0 15px rgba(0, 209, 255, 0.4);
+  letter-spacing: 0.18em;
+  transition: box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 0 20px rgba(0, 209, 255, 0.35);
 }
 
-.submitButton:hover {
-  transform: scale(1.02);
+.submitButton:not(.submitDisabled):hover {
+  box-shadow: 0 0 30px rgba(0, 209, 255, 0.5);
 }
 
-.submitButton:active {
-  transform: scale(0.98);
+.submitDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.submitSuccess {
+  background: #10b981 !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
+  color: #fff !important;
 }
 
 .securityNote {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: rgba(187, 201, 207, 0.4);
+  gap: 7px;
+  color: rgba(187, 201, 207, 0.35);
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-top: 8px;
+  letter-spacing: 0.15em;
 }
 
+/* =============================================
+   Info Card (How it works)
+   ============================================= */
 .infoCard {
-  padding: 24px;
+  padding: 20px 24px;
   background: linear-gradient(to bottom right, rgba(0, 209, 255, 0.05), transparent);
-  border-color: rgba(0, 209, 255, 0.1);
+  border-color: rgba(0, 209, 255, 0.12);
+  border-radius: 16px;
 }
 
 .infoTitleArea {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.infoIcon {
+  color: var(--color-primary-container);
 }
 
 .infoTitle {
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 800;
+  font-size: 13px;
   color: var(--color-on-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .infoList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .infoItem {
@@ -517,23 +890,29 @@
   gap: 12px;
   font-size: 12px;
   color: var(--color-on-surface-variant);
+  line-height: 1.6;
 }
 
 .infoStep {
   color: var(--color-primary-container);
-  font-weight: 700;
+  font-weight: 900;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
 }
 
+/* =============================================
+   Live Feed Ticker
+   ============================================= */
 .ticker {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 40;
-  background: rgba(5, 7, 10, 0.8);
+  background: rgba(5, 7, 10, 0.85);
   backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 12px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 32px;
   overflow: hidden;
 }
 
@@ -553,17 +932,24 @@
 }
 
 .liveFeedDot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 9999px;
   background: var(--color-primary-container);
+  box-shadow: 0 0 8px rgba(0, 209, 255, 0.7);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
 }
 
 .liveFeedLabel {
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   color: var(--color-primary-container);
 }
 
@@ -575,33 +961,41 @@
 .marquee {
   display: flex;
   gap: 48px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-on-surface-variant);
   font-weight: 500;
   white-space: nowrap;
   width: fit-content;
-  animation: marquee 30s linear infinite;
+  animation: marquee 35s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .tickerItem {
   display: flex;
-  items-center: center;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .tickerUser {
-  color: rgba(0, 209, 255, 0.6);
+  color: rgba(0, 209, 255, 0.55);
   font-family: var(--font-mono);
+  font-size: 11px;
 }
 
 .tickerAction {
-  color: white;
-  font-weight: 700;
+  color: #fff;
+  font-weight: 800;
 }
 
 .tickerDot {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
