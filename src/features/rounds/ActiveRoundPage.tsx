@@ -2,543 +2,533 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ChevronRight,
-  TrendingUp,
-  TrendingDown,
-  ArrowUpRight,
-  Info,
-  Lock,
-  ExternalLink,
-  Users,
-  Target,
-  Zap,
-  RefreshCw,
+  ChevronRight, TrendingUp, TrendingDown, ArrowUpRight,
+  Info, Lock, ExternalLink, Users, Target, Zap, RefreshCw,
+  Plus, Wallet, CheckCircle, XCircle, Clock,
 } from 'lucide-react';
-import { activeRound } from '../../services/mockData';
 import { cn } from '../../lib/utils';
 import { TradingViewWidget } from './TradingViewWidget';
-
+import { microUsdToUsd, formatPrice } from '../../services/oracle';
+import {
+  getRound, getCurrentRound, getParticipantCount, getReward,
+  createRound, placeBet, claimReward, RoundData,
+} from '../../services/contract';
+import { useWallet } from '../../lib/walletContext';
+import { api } from '../../services/api';
 import styles from './ActiveRoundPage.module.css';
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-const TOTAL_DURATION_SECS = 4 * 3600 + 22 * 60 + 15;
-const AVAILABLE_XLM = 12.5;
+type Interval = '1H' | '4H' | '1D';
+type Phase = 'open' | 'locked' | 'ended' | 'settled' | 'cancelled';
+
 const POOL_MULTIPLIER = 4.25;
 
-// CoinGecko public endpoint — no API key required
-const COINGECKO_URL =
-  'https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd&include_24hr_change=true';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-type Interval = '1H' | '4H' | '1D';
-
-interface LivePrice {
-  price: number;
-  change24h: number;
-  lastUpdated: Date;
+function getPhase(round: RoundData | null, now: number): Phase {
+  if (!round) return 'open';
+  const lockTime = Number(round.lock_time);
+  const endTime = Number(round.end_time);
+  if (round.status === 'Settled') return 'settled';
+  if (round.status === 'Cancelled') return 'cancelled';
+  if (now >= endTime) return 'ended';
+  if (now >= lockTime) return 'locked';
+  return 'open';
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-interface DistBarProps {
-  label: string;
-  pct: number;
-  isPeak: boolean;
-  delay: number;
+function formatCountdown(secs: number): string {
+  if (secs <= 0) return '00:00:00';
+  const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+  const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
 }
-
-const DistBar = ({ label, pct, isPeak, delay }: DistBarProps) => {
-  const fillRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = fillRef.current;
-    if (!el) return;
-    const timeout = setTimeout(() => {
-      el.style.width = `${pct}%`;
-    }, delay);
-    return () => clearTimeout(timeout);
-  }, [pct, delay]);
-
-  return (
-    <div className={styles.distRow}>
-      <span className={styles.distLabel}>{label}</span>
-      <div className={styles.distBarTrack}>
-        <div
-          ref={fillRef}
-          className={cn(styles.distBarFill, isPeak && styles.distBarPeak)}
-          style={{ width: 0, transition: `width 0.6s ease-out ${delay}ms` }}
-        />
-      </div>
-      <span className={styles.distPct}>{pct}%</span>
-    </div>
-  );
-};
-
-const PredictionDistribution = () => {
-  const predictions = [
-    { label: '< $0.130', pct: 8 },
-    { label: '$0.130–0.132', pct: 14 },
-    { label: '$0.132–0.134', pct: 31 },
-    { label: '$0.134–0.136', pct: 28 },
-    { label: '$0.136–0.138', pct: 12 },
-    { label: '> $0.138', pct: 7 },
-  ];
-  const max = Math.max(...predictions.map((p) => p.pct));
-
-  return (
-    <div className={styles.distCard}>
-      <div className={styles.distHeader}>
-        <Target size={16} className={styles.distIcon} />
-        <span className={styles.distTitle}>Prediction Distribution</span>
-        <span className={styles.distParticipants}>
-          <Users size={12} />
-          {activeRound.participants.toLocaleString()} participants
-        </span>
-      </div>
-      <div className={styles.distBars}>
-        {predictions.map((p, i) => (
-          <DistBar
-            key={i}
-            label={p.label}
-            pct={Math.round((p.pct / max) * 100)}
-            isPeak={p.pct === max}
-            delay={i * 70}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-
-interface ConfidenceFillProps {
-  pct: number;
-  color: string;
-}
-
-const ConfidenceFill = ({ pct, color }: ConfidenceFillProps) => {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      el.style.width = `${pct}%`;
-    });
-  }, [pct]);
-
-  return (
-    <div
-      ref={ref}
-      className={styles.confidenceFill}
-      style={{ width: 0, background: color, transition: 'width 0.6s ease-out, background 0.4s' }}
-    />
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Live Price Badge
-// ---------------------------------------------------------------------------
-interface LivePriceBadgeProps {
-  live: LivePrice | null;
-  loading: boolean;
-  onRefresh: () => void;
-}
-
-const LivePriceBadge = ({ live, loading, onRefresh }: LivePriceBadgeProps) => {
-  const isPositive = !live || live.change24h >= 0;
-  const displayPrice = live ? live.price.toFixed(5) : activeRound.currentPrice.toString();
-  const displayChange = live ? live.change24h.toFixed(2) : activeRound.priceChange.toString();
-
-  return (
-    <div className={styles.livePriceBadge}>
-      <div className={styles.priceArea}>
-        <span className={styles.price}>${displayPrice}</span>
-        <span className={cn(styles.change, !isPositive && styles.changeBear)}>
-          {isPositive ? <ArrowUpRight className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-          {isPositive ? '+' : ''}{displayChange}%
-        </span>
-      </div>
-      <button
-        className={cn(styles.refreshBtn, loading && styles.refreshBtnSpin)}
-        onClick={onRefresh}
-        title="Refresh live price"
-        aria-label="Refresh live price"
-      >
-        <RefreshCw size={13} />
-      </button>
-      {live && (
-        <span className={styles.lastUpdated}>
-          Updated {live.lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-        </span>
-      )}
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Main Page
-// ---------------------------------------------------------------------------
 
 export const ActiveRoundPage = () => {
-  const [timeLeft, setTimeLeft] = useState(TOTAL_DURATION_SECS);
   const [activeTab, setActiveTab] = useState<Interval>('1H');
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const { address: walletAddress, connect: connectWalletCtx } = useWallet();
+
+  // Round state
+  const [roundId, setRoundId] = useState<number>(0);
+  const [round, setRound] = useState<RoundData | null>(null);
+  const [participantCount, setParticipantCount] = useState(0);
+  const [myReward, setMyReward] = useState<number>(0);
+  const [now, setNow] = useState(Math.floor(Date.now() / 1000));
+
+  // Form state
   const [prediction, setPrediction] = useState('');
   const [stake, setStake] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  // Live price state
-  const [livePrice, setLivePrice] = useState<LivePrice | null>(null);
-  const [priceLoading, setPriceLoading] = useState(false);
+  // Create round form
+  const [showCreate, setShowCreate] = useState(false);
+  const [createDuration, setCreateDuration] = useState('60'); // minutes
+  const [createMinStake, setCreateMinStake] = useState('1');
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // ── Fetch live price from CoinGecko ──────────────────────────────────────
-  const fetchLivePrice = useCallback(async () => {
-    setPriceLoading(true);
-    try {
-      const res = await fetch(COINGECKO_URL, { cache: 'no-store' });
-      if (!res.ok) throw new Error('fetch failed');
-      const data = await res.json();
-      setLivePrice({
-        price: data.stellar.usd,
-        change24h: data.stellar.usd_24h_change,
-        lastUpdated: new Date(),
-      });
-    } catch {
-      // silently keep previous value
-    } finally {
-      setPriceLoading(false);
-    }
-  }, []);
-
-  // Fetch immediately on mount, then every 30s
-  useEffect(() => {
-    fetchLivePrice();
-    const interval = setInterval(fetchLivePrice, 30_000);
-    return () => clearInterval(interval);
-  }, [fetchLivePrice]);
-
-  // ── Countdown ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (timeLeft <= 0) return;
-    const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(id);
-  }, [timeLeft]);
-
-  const formatTime = (secs: number) => {
-    const h = Math.floor(secs / 3600).toString().padStart(2, '0');
-    const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${h}:${m}:${s}`;
+  const showToast = (type: 'success' | 'error', msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 4000);
   };
 
-  // ── Derived state ─────────────────────────────────────────────────────────
+  // ── Fetch live price from Binance ─────────────────────────────────────────
+  const fetchPrice = useCallback(async () => {
+    setPriceLoading(true);
+    try {
+      const p = await api.price.getCurrent();
+      setLivePrice(p.priceUsd);
+    } catch { /* keep previous */ }
+    finally { setPriceLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchPrice();
+    const id = setInterval(fetchPrice, 30_000);
+    return () => clearInterval(id);
+  }, [fetchPrice]);
+
+  // ── Clock ─────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── Load wallet — handled by WalletProvider context ──────────────────────
+
+  // ── Load current round ────────────────────────────────────────────────────
+  const loadRound = useCallback(async () => {
+    try {
+      const id = await getCurrentRound();
+      setRoundId(id);
+      if (id > 0) {
+        const r = await getRound(id);
+        setRound(r);
+        const cnt = await getParticipantCount(id);
+        setParticipantCount(cnt);
+        if (walletAddress) {
+          const reward = await getReward(id, walletAddress);
+          setMyReward(Number(reward) / 10_000_000);
+        }
+      }
+    } catch (e) {
+      console.error('loadRound:', e);
+    }
+  }, [walletAddress]);
+
+  useEffect(() => {
+    loadRound();
+    const id = setInterval(loadRound, 15_000);
+    return () => clearInterval(id);
+  }, [loadRound]);
+
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const phase = getPhase(round, now);
+  const timeToLock = round ? Math.max(0, Number(round.lock_time) - now) : 0;
+  const timeToEnd = round ? Math.max(0, Number(round.end_time) - now) : 0;
+  const countdown = phase === 'open' ? timeToLock : timeToEnd;
+  const countdownLabel = phase === 'open' ? 'Betting closes in' : phase === 'locked' ? 'Round ends in' : 'Round ended';
+
   const stakeNum = parseFloat(stake) || 0;
+  const predNum = parseFloat(prediction) || 0;
   const estimatedPayout = stakeNum > 0 ? stakeNum * POOL_MULTIPLIER : 0;
-  const confidence =
-    stakeNum === 0
-      ? 0
-      : stakeNum < 2
-      ? 25
-      : stakeNum < 5
-      ? 55
-      : stakeNum < 10
-      ? 75
-      : 92;
-  const confidenceLabel =
-    confidence === 0
-      ? '–'
-      : confidence < 40
-      ? 'Low'
-      : confidence < 65
-      ? 'Medium'
-      : confidence < 80
-      ? 'High'
-      : 'Very High';
-  const confidenceColor =
-    confidence < 40 ? '#f43f5e' : confidence < 65 ? '#eab308' : '#10b981';
+  const sentiment = !prediction || !livePrice ? null
+    : predNum > livePrice ? 'bull' : predNum < livePrice ? 'bear' : 'neutral';
 
-  const handleMaxStake = () => setStake(AVAILABLE_XLM.toString());
+  const totalPoolXlm = round ? Number(round.total_pool) / 10_000_000 : 0;
+  const settlePrice = round && round.settle_price > 0 ? microUsdToUsd(round.settle_price) : null;
 
-  const handleSubmit = useCallback(() => {
-    if (!prediction || !stake || stakeNum <= 0 || stakeNum > AVAILABLE_XLM) return;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2500);
-  }, [prediction, stake, stakeNum]);
+  // ── Handlers ──────────────────────────────────────────────────────────────
+  const handleConnect = async () => {
+    try {
+      await connectWalletCtx();
+    } catch (e) {
+      showToast('error', String(e));
+    }
+  };
 
-  const canSubmit =
-    prediction !== '' && stakeNum > 0 && stakeNum <= AVAILABLE_XLM && timeLeft > 0;
+  const handleCreateRound = async () => {
+    if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
+    setLoading(true);
+    try {
+      const durationSecs = parseInt(createDuration) * 60;
+      const endTime = Math.floor(Date.now() / 1000) + durationSecs;
+      const minStakeXlm = parseFloat(createMinStake) || 1;
+      const { signTransaction } = await import('@stellar/freighter-api');
+      const newId = await createRound(walletAddress, endTime, minStakeXlm, signTransaction);
+      // Record in backend DB
+      const lockTime = Math.floor(Date.now() / 1000) + Math.floor(durationSecs / 2);
+      await api.rounds.record({
+        contractRoundId: parseInt(newId),
+        creatorAddress: walletAddress,
+        startTime: new Date().toISOString(),
+        lockTime: new Date(lockTime * 1000).toISOString(),
+        endTime: new Date(endTime * 1000).toISOString(),
+        minStakeStroops: String(Math.floor(minStakeXlm * 10_000_000)),
+      }).catch(() => {/* non-critical */});
+      showToast('success', `Round #${newId} created!`);
+      setShowCreate(false);
+      await loadRound();
+    } catch (e) {
+      showToast('error', String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const currentPrice = livePrice?.price ?? activeRound.currentPrice;
-  const predNum = parseFloat(prediction);
-  const sentiment = !prediction
-    ? null
-    : predNum > currentPrice
-    ? 'bull'
-    : predNum < currentPrice
-    ? 'bear'
-    : 'neutral';
+  const handlePlaceBet = async () => {
+    if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
+    if (!prediction || stakeNum <= 0) { showToast('error', 'Enter prediction and stake'); return; }
+    if (phase !== 'open') { showToast('error', 'Betting is closed'); return; }
+    setLoading(true);
+    try {
+      const { signTransaction } = await import('@stellar/freighter-api');
+      const txHash = await placeBet(walletAddress, roundId, predNum, stakeNum, signTransaction);
+      // Record in backend DB
+      await api.bets.record({
+        roundId,
+        bettorAddress: walletAddress,
+        predictedPriceMicroUsd: String(Math.round(predNum * 1_000_000)),
+        stakeAmountStroops: String(Math.floor(stakeNum * 10_000_000)),
+        txHash,
+      }).catch(() => {/* non-critical */});
+      showToast('success', 'Bet placed successfully!');
+      setPrediction('');
+      setStake('');
+      await loadRound();
+    } catch (e) {
+      showToast('error', String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClaim = async () => {
+    if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
+    setLoading(true);
+    try {
+      const { signTransaction } = await import('@stellar/freighter-api');
+      const txHash = await claimReward(walletAddress, roundId, signTransaction);
+      await api.rewards.recordClaim({ address: walletAddress, roundId, txHash }).catch(() => {});
+      showToast('success', `Claimed ${myReward.toFixed(2)} XLM!`);
+      setMyReward(0);
+    } catch (e) {
+      showToast('error', String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className={cn(styles.container, mounted && styles.containerMounted)}>
-      {/* Breadcrumb / Status */}
+    <div className={cn(styles.container, styles.containerMounted)}>
+      {/* Toast */}
+      {toast && (
+        <div className={cn(
+          'fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold shadow-xl',
+          toast.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' : 'bg-red-500/20 border border-red-500/40 text-red-300'
+        )}>
+          {toast.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Breadcrumb */}
       <div className={styles.breadcrumb}>
         <div className={styles.breadcrumbLeft}>
           <span>Home</span>
           <ChevronRight className="w-3 h-3" />
-          <span className={styles.activePath}>Active Round {activeRound.id}</span>
+          <span className={styles.activePath}>
+            {roundId > 0 ? `Round #${roundId}` : 'No Active Round'}
+          </span>
         </div>
         <div className={styles.breadcrumbRight}>
-          <div className={styles.liveBadge}>
-            <span className={styles.ping}>
-              <span className={styles.pingInner}></span>
-              <span className={styles.pingDot}></span>
-            </span>
-            Live Market
+          {/* Phase badge */}
+          <div className={cn(
+            'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
+            phase === 'open' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
+            phase === 'locked' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
+            phase === 'settled' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+            phase === 'cancelled' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+            'bg-gray-500/10 border-gray-500/30 text-gray-400'
+          )}>
+            <span className={cn(
+              'w-1.5 h-1.5 rounded-full',
+              phase === 'open' ? 'bg-emerald-400 animate-pulse' :
+              phase === 'locked' ? 'bg-yellow-400' :
+              phase === 'settled' ? 'bg-blue-400' : 'bg-gray-400'
+            )} />
+            {phase === 'open' ? 'OPEN' : phase === 'locked' ? 'LOCKED' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : 'ENDED'}
           </div>
+
+          {/* Wallet */}
+          {walletAddress ? (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">
+              <Wallet size={12} />
+              {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+            </div>
+          ) : (
+            <button onClick={handleConnect} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+              <Wallet size={12} /> Connect
+            </button>
+          )}
         </div>
       </div>
 
       <div className={styles.mainGrid}>
-        {/* ── LEFT: Chart & Market Data ── */}
+        {/* ── LEFT: Chart ── */}
         <div className={styles.chartColumn}>
-          {/* Chart Card */}
           <div className={cn('glass-card', styles.chartCard)}>
             <div className={styles.chartHeader}>
               <div className={styles.chartTitleArea}>
-                <h2 className={styles.pairLabel}>XLM / USDT · Live Chart</h2>
-                <LivePriceBadge
-                  live={livePrice}
-                  loading={priceLoading}
-                  onRefresh={fetchLivePrice}
-                />
+                <h2 className={styles.pairLabel}>XLM / USDT · Binance Live</h2>
+                <div className={styles.livePriceBadge}>
+                  <div className={styles.priceArea}>
+                    <span className={styles.price}>
+                      {livePrice ? formatPrice(livePrice) : '--'}
+                    </span>
+                  </div>
+                  <button
+                    className={cn(styles.refreshBtn, priceLoading && styles.refreshBtnSpin)}
+                    onClick={fetchPrice}
+                  >
+                    <RefreshCw size={13} />
+                  </button>
+                </div>
               </div>
               <div className={styles.statsRow}>
                 <div className={styles.statItem}>
-                  <span className={styles.statLabel}>Round Timer</span>
-                  <span
-                    className={cn(
-                      styles.statValue,
-                      styles.timer,
-                      timeLeft < 600 && styles.timerUrgent
-                    )}
-                  >
-                    {formatTime(timeLeft)}
+                  <span className={styles.statLabel}>{countdownLabel}</span>
+                  <span className={cn(styles.statValue, styles.timer, countdown < 300 && styles.timerUrgent)}>
+                    {phase === 'ended' || phase === 'settled' || phase === 'cancelled'
+                      ? '—'
+                      : formatCountdown(countdown)}
                   </span>
                 </div>
-                <div className={styles.divider}></div>
+                <div className={styles.divider} />
                 <div className={styles.statItem}>
                   <span className={styles.statLabel}>Pool Size</span>
                   <span className={cn(styles.statValue, styles.pool)}>
-                    {activeRound.poolSize.toLocaleString()} XLM
+                    {totalPoolXlm.toLocaleString(undefined, { maximumFractionDigits: 0 })} XLM
                   </span>
+                </div>
+                <div className={styles.divider} />
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Participants</span>
+                  <span className={styles.statValue}>{participantCount}</span>
                 </div>
               </div>
             </div>
 
-            {/* ── TradingView Chart ── */}
             <div className={styles.chartArea}>
-              {/* Interval switcher (overlay) */}
               <div className={styles.chartControls}>
-                {(['1H', '4H', '1D'] as Interval[]).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={cn(styles.chartTab, activeTab === tab && styles.activeTab)}
-                  >
+                {(['1H', '4H', '1D'] as Interval[]).map(tab => (
+                  <button key={tab} onClick={() => setActiveTab(tab)}
+                    className={cn(styles.chartTab, activeTab === tab && styles.activeTab)}>
                     {tab}
                   </button>
                 ))}
               </div>
-
               <TradingViewWidget interval={activeTab} height={340} />
             </div>
           </div>
 
-          {/* Prediction Distribution */}
-          <PredictionDistribution />
+          {/* Settled result */}
+          {phase === 'settled' && settlePrice && (
+            <div className="glass-card p-4 border border-blue-500/20 bg-blue-500/5">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle size={16} className="text-blue-400" />
+                <span className="text-sm font-bold text-blue-300">Round Settled</span>
+              </div>
+              <p className="text-sm text-gray-400">
+                Final price: <span className="text-white font-bold">{formatPrice(settlePrice)}</span>
+              </p>
+              {myReward > 0 && (
+                <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <p className="text-sm text-emerald-300 font-bold">
+                    🎉 You won {myReward.toFixed(2)} XLM!
+                  </p>
+                  <button onClick={handleClaim} disabled={loading}
+                    className="mt-2 w-full py-2 rounded-lg bg-emerald-500 text-black text-sm font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors">
+                    {loading ? 'Claiming...' : 'Claim Reward'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Activity Card */}
+          {/* Cancelled */}
+          {phase === 'cancelled' && (
+            <div className="glass-card p-4 border border-red-500/20 bg-red-500/5">
+              <div className="flex items-center gap-2">
+                <XCircle size={16} className="text-red-400" />
+                <span className="text-sm font-bold text-red-300">Round Cancelled</span>
+                <span className="text-xs text-gray-500">— Less than 2 participants. Stakes refunded.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Participants info */}
           <div className={cn('glass-card', styles.activityCard)}>
             <div className={styles.participantsArea}>
               <div className={styles.avatarGroup}>
                 <span className={styles.avatarLabel}>Participants</span>
-                <div className={styles.avatars}>
-                  {['JD', 'AK', '0x', '+12'].map((init, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        styles.avatar,
-                        i === 0
-                          ? styles.avatarMain
-                          : i === 1
-                          ? styles.avatarSec
-                          : i === 2
-                          ? styles.avatarTer
-                          : styles.avatarMore
-                      )}
-                    >
-                      {init}
-                    </div>
-                  ))}
-                </div>
+                <span className={styles.statValue}>{participantCount} / 100</span>
               </div>
-              <div className={styles.divider}></div>
+              <div className={styles.divider} />
               <div className={styles.avatarGroup}>
-                <span className={styles.avatarLabel}>Avg Prediction</span>
-                <span className={styles.statValue}>${activeRound.avgPrediction}</span>
+                <span className={styles.avatarLabel}>Phase</span>
+                <span className={styles.statValue} style={{ textTransform: 'capitalize' }}>{phase}</span>
               </div>
-              <div className={styles.divider}></div>
+              <div className={styles.divider} />
               <div className={styles.avatarGroup}>
-                <span className={styles.avatarLabel}>Total Participants</span>
-                <span className={styles.statValue}>{activeRound.participants.toLocaleString()}</span>
+                <span className={styles.avatarLabel}>Min Stake</span>
+                <span className={styles.statValue}>
+                  {round ? (Number(round.min_stake) / 10_000_000).toFixed(1) : '—'} XLM
+                </span>
               </div>
             </div>
-            <button className={styles.detailButton}>
-              Detailed Round Data
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
           </div>
         </div>
 
-        {/* ── RIGHT: Prediction Box ── */}
+        {/* ── RIGHT: Prediction + Create ── */}
         <div className={styles.predictionBox}>
+
+          {/* Create Round */}
+          <div className="glass-card p-4 mb-4">
+            <button
+              onClick={() => setShowCreate(!showCreate)}
+              className="w-full flex items-center justify-between text-sm font-bold text-gray-300 hover:text-white transition-colors"
+            >
+              <span className="flex items-center gap-2"><Plus size={14} /> Create New Round</span>
+              <ChevronRight size={14} className={cn('transition-transform', showCreate && 'rotate-90')} />
+            </button>
+
+            {showCreate && (
+              <div className="mt-4 space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Duration (minutes, min 10)</label>
+                  <input
+                    type="number" min="10" value={createDuration}
+                    onChange={e => setCreateDuration(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1 uppercase">Min Stake (XLM)</label>
+                  <input
+                    type="number" min="0.1" step="0.1" value={createMinStake}
+                    onChange={e => setCreateMinStake(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
+                  />
+                </div>
+                <div className="text-xs text-gray-500 bg-white/5 rounded-lg p-2">
+                  <p>• Betting open for first {Math.floor(parseInt(createDuration || '60') / 2)} min</p>
+                  <p>• Locked for last {Math.ceil(parseInt(createDuration || '60') / 2)} min</p>
+                  <p>• Auto-cancel if &lt; 2 participants</p>
+                </div>
+                <button
+                  onClick={handleCreateRound} disabled={loading || !walletAddress}
+                  className="w-full py-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-bold hover:bg-emerald-500/30 disabled:opacity-40 transition-colors"
+                >
+                  {loading ? 'Creating...' : 'Create Round'}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Predict Card */}
           <div className={cn('glass-card', styles.predictCard)}>
             <div className={styles.predictHeader}>
               <h3 className={styles.predictTitle}>Predict XLM Price</h3>
-              <p className={cn(styles.predictSub, timeLeft < 600 && styles.predictSubUrgent)}>
-                Round closes in{' '}
-                <span className={styles.timerInline}>{formatTime(timeLeft)}</span>
-              </p>
-
-              {/* Live price hint */}
+              {phase === 'open' && (
+                <p className={styles.predictSub}>
+                  Betting closes in <span className={styles.timerInline}>{formatCountdown(timeToLock)}</span>
+                </p>
+              )}
+              {phase === 'locked' && (
+                <p className={cn(styles.predictSub, 'text-yellow-400')}>
+                  <Lock size={12} className="inline mr-1" />
+                  Betting locked — round ends in {formatCountdown(timeToEnd)}
+                </p>
+              )}
+              {phase === 'ended' && (
+                <p className={cn(styles.predictSub, 'text-gray-500')}>
+                  <Clock size={12} className="inline mr-1" />
+                  Awaiting settlement...
+                </p>
+              )}
               {livePrice && (
                 <div className={styles.currentPriceHint}>
-                  Current: <strong>${livePrice.price.toFixed(5)}</strong>
+                  Binance: <strong>{formatPrice(livePrice)}</strong>
                 </div>
               )}
             </div>
 
-            <div className={styles.predictForm}>
-              {/* Price Input */}
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Price Prediction (USD)</label>
-                <div className={styles.inputWrapper}>
-                  <input
-                    className={styles.input}
-                    placeholder={livePrice ? livePrice.price.toFixed(4) : '0.1350'}
-                    type="number"
-                    step="0.0001"
-                    min="0"
-                    value={prediction}
-                    onChange={(e) => setPrediction(e.target.value)}
-                  />
-                  <span className={styles.inputSuffix}>USD</span>
-                </div>
-                {sentiment === 'bull' && (
-                  <div className={styles.hintBull}>
-                    <TrendingUp size={11} /> Bullish — you predict price rises
+            {phase === 'open' ? (
+              <div className={styles.predictForm}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Price Prediction (USD)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      className={styles.input}
+                      placeholder={livePrice ? livePrice.toFixed(4) : '0.1350'}
+                      type="number" step="0.0001" min="0"
+                      value={prediction}
+                      onChange={e => setPrediction(e.target.value)}
+                    />
+                    <span className={styles.inputSuffix}>USD</span>
                   </div>
-                )}
-                {sentiment === 'bear' && (
-                  <div className={styles.hintBear}>
-                    <TrendingDown size={11} /> Bearish — you predict price drops
+                  {sentiment === 'bull' && <div className={styles.hintBull}><TrendingUp size={11} /> Bullish</div>}
+                  {sentiment === 'bear' && <div className={styles.hintBear}><TrendingDown size={11} /> Bearish</div>}
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Stake Amount (XLM)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      className={styles.input}
+                      placeholder="10.00" type="number" min="0" step="0.5"
+                      value={stake}
+                      onChange={e => setStake(e.target.value)}
+                    />
+                    <span className={styles.inputSuffix}>XLM</span>
                   </div>
-                )}
-                {sentiment === 'neutral' && (
-                  <div className={styles.hintNeutral}>Same as current price</div>
-                )}
-              </div>
-
-              {/* Stake Input */}
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Stake Amount (XLM)</label>
-                <div className={styles.inputWrapper}>
-                  <input
-                    className={cn(styles.input, stakeNum > AVAILABLE_XLM && styles.inputError)}
-                    placeholder="10.00"
-                    type="number"
-                    min="0"
-                    max={AVAILABLE_XLM}
-                    step="0.5"
-                    value={stake}
-                    onChange={(e) => setStake(e.target.value)}
-                  />
-                  <span className={styles.inputSuffix}>XLM</span>
                 </div>
-                <div className={styles.inputFooter}>
-                  <span className={styles.available}>Available: {AVAILABLE_XLM} XLM</span>
-                  <button className={styles.maxButton} onClick={handleMaxStake}>
-                    Max Stake
-                  </button>
-                </div>
-                {stakeNum > AVAILABLE_XLM && (
-                  <p className={styles.errorMsg}>Exceeds available balance</p>
-                )}
-              </div>
 
-              {/* Confidence meter */}
-              {stakeNum > 0 && (
-                <div className={styles.confidenceMeter}>
-                  <div className={styles.confidenceHeader}>
-                    <span className={styles.confidenceLabel}>
-                      <Zap size={12} /> Win Confidence
-                    </span>
-                    <span className={styles.confidenceValue} style={{ color: confidenceColor }}>
-                      {confidenceLabel}
+                <div className={styles.summary}>
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Est. Payout</span>
+                    <span className={cn(styles.summaryValue, styles.payout)}>
+                      {estimatedPayout > 0 ? `~${estimatedPayout.toFixed(2)} XLM` : '–'}
                     </span>
                   </div>
-                  <div className={styles.confidenceTrack}>
-                    <ConfidenceFill pct={confidence} color={confidenceColor} />
+                  <div className={styles.summaryDivider} />
+                  <div className={styles.summaryRow}>
+                    <span className={styles.summaryLabel}>Participants</span>
+                    <span className={styles.summaryValue}>{participantCount} joined</span>
                   </div>
                 </div>
-              )}
 
-              {/* Summary */}
-              <div className={styles.summary}>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Estimated Payout</span>
-                  <span className={cn(styles.summaryValue, styles.payout)}>
-                    {estimatedPayout > 0 ? `~ ${estimatedPayout.toFixed(2)} XLM` : '–'}
-                  </span>
-                </div>
-                <div className={styles.summaryDivider}></div>
-                <div className={styles.summaryRow}>
-                  <span className={styles.summaryLabel}>Probability Score</span>
-                  <span className={styles.summaryValue} style={{ color: confidenceColor }}>
-                    {confidenceLabel === '–' ? 'Pending' : `${confidenceLabel} Confidence`}
-                  </span>
+                <button
+                  onClick={handlePlaceBet}
+                  disabled={loading || !walletAddress || !prediction || stakeNum <= 0}
+                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum <= 0) && styles.submitDisabled)}
+                >
+                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : 'Submit Prediction'}
+                </button>
+
+                <div className={styles.securityNote}>
+                  <Lock className="w-3 h-3" />
+                  Secured by Stellar Smart Contracts · Oracle: Binance
                 </div>
               </div>
-
-              {/* Submit */}
-              <button
-                className={cn(
-                  styles.submitButton,
-                  !canSubmit && styles.submitDisabled,
-                  submitted && styles.submitSuccess
-                )}
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-              >
-                {submitted ? '✓ Prediction Submitted!' : 'Submit Prediction'}
-              </button>
-
-              <div className={styles.securityNote}>
-                <Lock className="w-3 h-3" />
-                Secured by Stellar Smart Contracts
+            ) : (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                {phase === 'locked' && '🔒 Betting is closed. Waiting for round to end.'}
+                {phase === 'ended' && '⏳ Round ended. Awaiting oracle settlement.'}
+                {phase === 'settled' && settlePrice && `✅ Settled at ${formatPrice(settlePrice)}`}
+                {phase === 'cancelled' && '❌ Round cancelled — not enough participants.'}
               </div>
-            </div>
+            )}
           </div>
 
           {/* How it works */}
@@ -549,9 +539,11 @@ export const ActiveRoundPage = () => {
             </div>
             <ul className={styles.infoList}>
               {[
-                'Predict the price of XLM at the end of the round.',
-                'Stake your XLM into the prediction pool.',
-                'Closest predictions share the pool rewards proportionally.',
+                'Anyone can create a round (min 10 min duration).',
+                'Bet in the first 50% of the round. Locked after that.',
+                'If < 2 participants at end → cancelled & refunded.',
+                'Oracle fetches Binance price at end_time.',
+                'Top 3 closest predictions share 60% / 25% / 15% of pool.',
               ].map((text, i) => (
                 <li key={i} className={styles.infoItem}>
                   <span className={styles.infoStep}>0{i + 1}.</span>
@@ -562,48 +554,6 @@ export const ActiveRoundPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Live Feed Ticker */}
-      <footer className={styles.ticker}>
-        <div className={styles.tickerContent}>
-          <div className={styles.liveFeedLabelArea}>
-            <span className={styles.liveFeedDot}></span>
-            <span className={styles.liveFeedLabel}>Live Feed</span>
-          </div>
-          <div className={styles.marqueeContainer}>
-            <div className={styles.marquee}>
-              {[1, 2].map((rep) => (
-                <React.Fragment key={rep}>
-                  <div className={styles.tickerItem}>
-                    <span className={styles.tickerUser}>0x...A1</span>
-                    <span>just staked <span className={styles.tickerAction}>20 XLM</span></span>
-                    <span className={styles.tickerDot}></span>
-                  </div>
-                  <div className={styles.tickerItem}>
-                    <span className={styles.tickerUser}>stellar_pro</span>
-                    <span>predicted <span className={styles.tickerAction}>
-                      {livePrice ? `$${(livePrice.price * 1.01).toFixed(4)}` : '$0.1341'}
-                    </span></span>
-                    <span className={styles.tickerDot}></span>
-                  </div>
-                  <div className={styles.tickerItem}>
-                    <span className={styles.tickerUser}>whale_watcher</span>
-                    <span>just staked <span className={styles.tickerAction}>1,200 XLM</span></span>
-                    <span className={styles.tickerDot}></span>
-                  </div>
-                  <div className={styles.tickerItem}>
-                    <span className={styles.tickerUser}>moon_shot</span>
-                    <span>predicted <span className={styles.tickerAction}>
-                      {livePrice ? `$${(livePrice.price * 1.05).toFixed(4)}` : '$0.1450'}
-                    </span></span>
-                    <span className={styles.tickerDot}></span>
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

@@ -1,163 +1,156 @@
-import React from 'react';
-import { 
-  TrendingUp, 
-  Search, 
-  ArrowUpRight, 
-  Receipt, 
-  Download, 
-  ChevronLeft, 
-  ChevronRight,
-  ExternalLink,
-  History as HistoryIcon
+import React, { useState, useEffect } from 'react';
+import {
+  TrendingUp, Search, ExternalLink, History as HistoryIcon,
+  ChevronLeft, ChevronRight, Download,
 } from 'lucide-react';
-import { transactions } from '../../services/mockData';
 import { cn } from '../../lib/utils';
-import { PredictionStatus } from '../../types';
-
+import { api, ApiTransaction } from '../../services/api';
+import { useWallet } from '../../lib/walletContext';
 import styles from './HistoryPage.module.css';
 
-const StatusBadge = ({ status }: { status: PredictionStatus }) => {
+const StatusBadge = ({ status }: { status: string }) => {
+  const s = status.toUpperCase();
   const badgeStyles: Record<string, string> = {
-    SUCCESS: styles.successBadge,
+    CONFIRMED: styles.successBadge,
     PENDING: styles.pendingBadge,
     FAILED: styles.failedBadge,
   };
-
   return (
-    <div className={cn(styles.statusBadge, badgeStyles[status])}>
-      <span className={cn(styles.badgeDot, status === 'SUCCESS' ? styles.successDot : status === 'PENDING' ? styles.pendingDot : styles.failedDot)}></span>
-      {status}
+    <div className={cn(styles.statusBadge, badgeStyles[s] ?? styles.pendingBadge)}>
+      <span className={cn(styles.badgeDot, s === 'CONFIRMED' ? styles.successDot : s === 'PENDING' ? styles.pendingDot : styles.failedDot)} />
+      {s}
     </div>
   );
 };
 
 export const HistoryPage = () => {
+  const { address } = useWallet();
+  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [search, setSearch] = useState('');
+  const limit = 20;
+
+  useEffect(() => {
+    if (!address) return;
+    setLoading(true);
+    api.users.getHistory(address, { page, limit })
+      .then(res => {
+        setTransactions(res.data);
+        setTotal(res.pagination.total);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [address, page]);
+
+  const filtered = transactions.filter(tx =>
+    !search || tx.txHash?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const totalPages = Math.ceil(total / limit);
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <h1 className={styles.title}>Transaction History</h1>
-        <p className={styles.subTitle}>A chronological ledger of your stellar interactions and predictions.</p>
+        <p className={styles.subTitle}>A chronological ledger of your stellar interactions.</p>
       </header>
 
-      {/* Stats Overview */}
-      <div className={styles.statsGrid}>
-        <div className={styles.volumeCard}>
-          <div className={styles.volumeContent}>
-            <div className={styles.statTinyLabel}>Total Activity Volume</div>
-            <div className={styles.volumeValue}>42,850.25 <span className={styles.volumeUnit}>XLM</span></div>
-            <div className={styles.trendArea}>
-              <TrendingUp className="w-4 h-4" />
-              <span className={styles.trendText}>+12.4% this month</span>
-            </div>
-          </div>
-          <div className={styles.volumeGradient}></div>
-          <Receipt className={styles.volumeIcon} />
-        </div>
-        
-        <div className={styles.successCard}>
-          <div className={styles.statTinyLabel}>Successful Transactions</div>
-          <div className={styles.successValue}>98.2<span className={styles.successUnit}>%</span></div>
-          <div className={styles.successBarContainer}>
-            <div className={styles.successBar}></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Ledger Table Container */}
       <div className={styles.ledgerContainer}>
         <div className={styles.ledgerHeader}>
           <div className={styles.filterTabs}>
             <button className={cn(styles.filterTab, styles.activeFilterTab)}>All Activities</button>
-            <button className={cn(styles.filterTab, styles.inactiveFilterTab)}>Stakes</button>
-            <button className={cn(styles.filterTab, styles.inactiveFilterTab)}>Rewards</button>
           </div>
           <div className={styles.searchWrapper}>
             <Search className={styles.searchIcon} />
-            <input 
-              className={styles.searchInput} 
-              placeholder="Search hash..." 
+            <input
+              className={styles.searchInput}
+              placeholder="Search hash..."
               type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr className={styles.tableHead}>
-                <th className={styles.th}>Type</th>
-                <th className={styles.th}>Amount</th>
-                <th className={styles.th}>Status</th>
-                <th className={styles.th}>Timestamp</th>
-                <th className={cn(styles.th, styles.alignRight)}>Transaction Hash</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((tx) => (
-                <tr key={tx.id} className={styles.tableRow}>
-                  <td className={styles.td}>
-                    <div className={styles.typeCell}>
-                      <div className={styles.typeIconArea}>
-                        <HistoryIcon className="w-4 h-4" />
-                      </div>
-                      <span className={styles.typeName}>{tx.type}</span>
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <span className={cn(styles.amount, tx.amount > 0 && styles.positive)}>
-                      {tx.amount > 0 ? `+ ${tx.amount.toFixed(2)}` : `- ${Math.abs(tx.amount).toFixed(2)}`} {tx.currency}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <StatusBadge status={tx.status} />
-                  </td>
-                  <td className={cn(styles.td, styles.timestamp)}>
-                    {tx.timestamp}
-                  </td>
-                  <td className={cn(styles.td, styles.hash)}>
-                    <a className={styles.hashLink} href="#">
-                      {tx.hash}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </td>
+        {!address ? (
+          <div className="p-8 text-center text-gray-500">Connect your wallet to view history</div>
+        ) : loading ? (
+          <div className="p-8 text-center text-gray-500">Loading...</div>
+        ) : (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr className={styles.tableHead}>
+                  <th className={styles.th}>Type</th>
+                  <th className={styles.th}>Amount (XLM)</th>
+                  <th className={styles.th}>Status</th>
+                  <th className={styles.th}>Round</th>
+                  <th className={cn(styles.th, styles.alignRight)}>Transaction Hash</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map(tx => (
+                  <tr key={tx.id} className={styles.tableRow}>
+                    <td className={styles.td}>
+                      <div className={styles.typeCell}>
+                        <div className={styles.typeIconArea}>
+                          <HistoryIcon className="w-4 h-4" />
+                        </div>
+                        <span className={styles.typeName}>{tx.type}</span>
+                      </div>
+                    </td>
+                    <td className={styles.td}>
+                      <span className={cn(styles.amount, tx.amountXlm > 0 && styles.positive)}>
+                        {tx.type === 'Stake' ? `- ${tx.amountXlm.toFixed(2)}` : `+ ${tx.amountXlm.toFixed(2)}`} XLM
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      <StatusBadge status={tx.status} />
+                    </td>
+                    <td className={styles.td}>
+                      {tx.roundId ? `#${tx.roundId}` : '—'}
+                    </td>
+                    <td className={cn(styles.td, styles.hash)}>
+                      {tx.txHash ? (
+                        <a
+                          className={styles.hashLink}
+                          href={`https://stellar.expert/explorer/testnet/tx/${tx.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-6)}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : '—'}
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-gray-500">No transactions yet</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        <div className={styles.footer}>
-          <div>Showing 1 - 4 of 128 transactions</div>
-          <div className={styles.pagination}>
-            <button className={styles.pageButton} disabled>
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button className={cn(styles.pageButton, styles.activePageButton)}>1</button>
-            <button className={styles.pageButton}>2</button>
-            <button className={styles.pageButton}>3</button>
-            <button className={styles.pageButton}>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        {totalPages > 1 && (
+          <div className={styles.footer}>
+            <div>Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</div>
+            <div className={styles.pagination}>
+              <button className={styles.pageButton} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button className={cn(styles.pageButton, styles.activePageButton)}>{page}</button>
+              <button className={styles.pageButton} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Export Card */}
-      <div className={styles.exportCard}>
-        <div className={styles.exportInfo}>
-          <div className={styles.exportIconArea}>
-            <Download className={styles.exportIcon} />
-          </div>
-          <div>
-            <h3 className={styles.exportTitle}>Export Ledger</h3>
-            <p className={styles.exportDesc}>Download your transaction history as CSV or PDF for tax and reporting purposes.</p>
-          </div>
-        </div>
-        <div className={styles.exportButtons}>
-          <button className={styles.csvButton}>CSV</button>
-          <button className={styles.pdfButton}>Download PDF</button>
-        </div>
-        <div className={styles.exportGlow}></div>
+        )}
       </div>
     </div>
   );
