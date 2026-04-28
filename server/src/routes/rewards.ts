@@ -62,13 +62,18 @@ router.post('/record-claim', validate(recordClaimSchema), async (req: Request, r
       return;
     }
 
-    // Insert claim transaction only if not already recorded
-    await query(
-      `INSERT INTO transactions (wallet_address, type, amount_stroops, round_id, tx_hash, status)
-       VALUES ($1, 'Claim', $2, $3, $4, 'confirmed')
-       ON CONFLICT DO NOTHING`,
-      [body.address, updated[0].reward_stroops, body.roundId, body.txHash]
+    // Insert claim transaction only if not already recorded (idempotent)
+    const existing = await query<{ id: number }>(
+      `SELECT id FROM transactions WHERE wallet_address = $1 AND round_id = $2 AND type = 'Claim'`,
+      [body.address, body.roundId]
     );
+    if (existing.length === 0) {
+      await query(
+        `INSERT INTO transactions (wallet_address, type, amount_stroops, round_id, tx_hash, status)
+         VALUES ($1, 'Claim', $2, $3, $4, 'confirmed')`,
+        [body.address, updated[0].reward_stroops, body.roundId, body.txHash]
+      );
+    }
 
     res.json({ success: true });
   } catch (err) {
