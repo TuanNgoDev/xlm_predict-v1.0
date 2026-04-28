@@ -70,21 +70,50 @@ export const ActiveRoundPage = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // ── Fetch live price from Binance ─────────────────────────────────────────
-  const fetchPrice = useCallback(async () => {
-    setPriceLoading(true);
-    try {
-      const p = await api.price.getCurrent();
-      setLivePrice(p.priceUsd);
-    } catch { /* keep previous */ }
-    finally { setPriceLoading(false); }
-  }, []);
-
+  // ── Live price via Binance WebSocket ─────────────────────────────────────
   useEffect(() => {
-    fetchPrice();
-    const id = setInterval(fetchPrice, 30_000);
-    return () => clearInterval(id);
-  }, [fetchPrice]);
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      ws = new WebSocket('wss://stream.binance.com:9443/ws/xlmusdt@miniTicker');
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data as string) as { c: string };
+          const price = parseFloat(data.c);
+          if (!isNaN(price) && price > 0) {
+            setLivePrice(price);
+            setPriceLoading(false);
+          }
+        } catch { /* ignore parse errors */ }
+      };
+
+      ws.onerror = () => {
+        setPriceLoading(false);
+      };
+
+      ws.onclose = () => {
+        // Reconnect after 3s if closed unexpectedly
+        reconnectTimer = setTimeout(connect, 3000);
+      };
+
+      ws.onopen = () => {
+        setPriceLoading(false);
+      };
+    };
+
+    setPriceLoading(true);
+    connect();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.onclose = null; // prevent reconnect on intentional close
+        ws.close();
+      }
+    };
+  }, []);
 
   // ── Clock ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -314,7 +343,8 @@ export const ActiveRoundPage = () => {
                   </div>
                   <button
                     className={cn(styles.refreshBtn, priceLoading && styles.refreshBtnSpin)}
-                    onClick={fetchPrice}
+                    onClick={() => setPriceLoading(true)}
+                    title="Reconnecting..."
                   >
                     <RefreshCw size={13} />
                   </button>
