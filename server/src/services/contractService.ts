@@ -92,7 +92,7 @@ async function simulate(method: string, args: ReturnType<typeof nativeToScVal>[]
     accountId: () => DUMMY,
     sequenceNumber: () => '0',
     incrementSequenceNumber: () => {},
-  } as Parameters<typeof TransactionBuilder>[0]));
+  } as unknown as ConstructorParameters<typeof TransactionBuilder>[0]));
 
   const tx = new TransactionBuilder(account, {
     fee: BASE_FEE,

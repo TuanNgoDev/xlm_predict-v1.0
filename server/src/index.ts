@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
+const httpLogger = (pinoHttp as unknown as typeof pinoHttp.default ?? pinoHttp);
 import pino from 'pino';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -55,7 +56,7 @@ async function main() {
   // Middleware
   const allowedOrigins = config.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
   app.use(cors({ origin: allowedOrigins }));
-  app.use(pinoHttp({ logger }));
+  app.use(httpLogger({ logger }));
   app.use(express.json());
   app.use(apiRateLimiter);
 

@@ -26,7 +26,7 @@ export function getPool(): pg.Pool {
 /**
  * Typed query helper — returns rows as T[]
  */
-export async function query<T = Record<string, unknown>>(
+export async function query<T extends pg.QueryResultRow = Record<string, unknown>>(
   sql: string,
   params?: unknown[]
 ): Promise<T[]> {
@@ -38,7 +38,7 @@ export async function query<T = Record<string, unknown>>(
 /**
  * Single-row query — returns first row or null
  */
-export async function queryOne<T = Record<string, unknown>>(
+export async function queryOne<T extends pg.QueryResultRow = Record<string, unknown>>(
   sql: string,
   params?: unknown[]
 ): Promise<T | null> {

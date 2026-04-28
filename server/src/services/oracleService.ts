@@ -29,7 +29,7 @@ interface DbPriceFeed {
   recorded_at: Date;
 }
 
-function dbRowToRecord(row: DbPriceFeed, stale = false): PriceRecord {
+function dbRowToRecord(row: DbPriceFeed, stale = false): PriceRecord & { stale: boolean } {
   return {
     id: row.id,
     priceUsd: parseFloat(row.price_usd),
