@@ -3,7 +3,7 @@
  * All calls go to the Express server at VITE_API_URL
  */
 
-const API_BASE = (import.meta as { env: Record<string, string> }).env.VITE_API_URL ?? 'http://localhost:3001';
+const API_BASE = (import.meta as unknown as { env: Record<string, string> }).env.VITE_API_URL ?? 'http://localhost:3001';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
