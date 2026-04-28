@@ -13,12 +13,14 @@ export const roundIdSchema = z.coerce
   .int('roundId must be an integer')
   .positive('roundId must be positive');
 
-export const predictedPriceSchema = z.coerce
-  .bigint()
+export const predictedPriceSchema = z
+  .union([z.string(), z.number(), z.bigint()])
+  .transform((v) => BigInt(v))
   .refine((v) => v > 0n, 'predictedPriceMicroUsd must be positive');
 
-export const stakeAmountSchema = z.coerce
-  .bigint()
+export const stakeAmountSchema = z
+  .union([z.string(), z.number(), z.bigint()])
+  .transform((v) => BigInt(v))
   .refine((v) => v > 0n, 'stakeAmountStroops must be positive');
 
 // ── Request body schemas ──────────────────────────────────────────────────────
@@ -26,8 +28,8 @@ export const stakeAmountSchema = z.coerce
 export const recordBetSchema = z.object({
   roundId: roundIdSchema,
   bettorAddress: stellarAddressSchema,
-  predictedPriceMicroUsd: z.union([z.string(), z.number(), z.bigint()]).transform((v) => BigInt(v)),
-  stakeAmountStroops: z.union([z.string(), z.number(), z.bigint()]).transform((v) => BigInt(v)),
+  predictedPriceMicroUsd: predictedPriceSchema,
+  stakeAmountStroops: stakeAmountSchema,
   txHash: z.string().length(64).optional(),
 });
 
@@ -37,7 +39,7 @@ export const recordRoundSchema = z.object({
   startTime: z.string().datetime(),
   lockTime: z.string().datetime(),
   endTime: z.string().datetime(),
-  minStakeStroops: z.union([z.string(), z.number(), z.bigint()]).transform((v) => BigInt(v)),
+  minStakeStroops: stakeAmountSchema,
 });
 
 export const recordClaimSchema = z.object({
