@@ -4,6 +4,9 @@
   "description": "XLMPredict backend server",
   "type": "module",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch --loader ts-node/esm src/index.ts",
     "build": "tsc",

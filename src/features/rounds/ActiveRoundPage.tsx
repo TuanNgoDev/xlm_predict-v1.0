@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  ChevronRight, TrendingUp, TrendingDown, ArrowUpRight,
-  Info, Lock, ExternalLink, Users, Target, Zap, RefreshCw,
-  Plus, Wallet, CheckCircle, XCircle, Clock,
+  ChevronRight, TrendingUp, TrendingDown,
+  Info, Lock, Wallet,
+  CheckCircle, XCircle, Clock,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { TradingViewWidget } from './TradingViewWidget';
@@ -14,10 +14,10 @@ import {
   createRound, placeBet, claimReward, RoundData,
 } from '../../services/contract';
 import { useWallet } from '../../lib/walletContext';
+import { useToast } from '../../lib/useToast';
 import { api } from '../../services/api';
 import styles from './ActiveRoundPage.module.css';
 
-type Interval = '1H' | '4H' | '1D';
 type Phase = 'open' | 'locked' | 'ended' | 'settled' | 'cancelled';
 
 const POOL_MULTIPLIER = 4.25;
@@ -42,10 +42,10 @@ function formatCountdown(secs: number): string {
 }
 
 export const ActiveRoundPage = () => {
-  const [activeTab, setActiveTab] = useState<Interval>('1H');
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  const { address: walletAddress, connect: connectWalletCtx } = useWallet();
+  const { address: walletAddress, setModalOpen, signTx } = useWallet();
+  const { showToast, ToastUI } = useToast();
 
   // Round state
   const [roundId, setRoundId] = useState<number>(0);
@@ -58,17 +58,13 @@ export const ActiveRoundPage = () => {
   const [prediction, setPrediction] = useState('');
   const [stake, setStake] = useState('');
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   // Create round form
-  const [showCreate, setShowCreate] = useState(false);
   const [createDuration, setCreateDuration] = useState('60'); // minutes
-  const [createMinStake, setCreateMinStake] = useState('1');
+  const MIN_STAKE = 100;
 
-  const showToast = (type: 'success' | 'error', msg: string) => {
-    setToast({ type, msg });
-    setTimeout(() => setToast(null), 4000);
-  };
+  // Live feed bets
+  const [liveBets, setLiveBets] = useState<import('../../services/api').ApiBet[]>([]);
 
   // ── Live price via Binance WebSocket ─────────────────────────────────────
   useEffect(() => {
@@ -160,8 +156,19 @@ export const ActiveRoundPage = () => {
       }
 
       if (id > 0 && walletAddress) {
+        console.log('🔍 Checking reward for:', { roundId: id, address: walletAddress });
         const reward = await getReward(id, walletAddress);
+        console.log('💰 Reward from contract:', reward.toString(), 'stroops =', Number(reward) / 10_000_000, 'XLM');
         setMyReward(Number(reward) / 10_000_000);
+      }
+
+      // Load live bets feed
+      if (id > 0) {
+        api.bets.getByRound(id).then(setLiveBets).catch(() => {
+          // backend offline — keep existing data
+        });
+      } else {
+        setLiveBets([]);
       }
     } catch (e) {
       console.error('loadRound:', e);
@@ -170,7 +177,7 @@ export const ActiveRoundPage = () => {
 
   useEffect(() => {
     loadRound();
-    const id = setInterval(loadRound, 15_000);
+    const id = setInterval(loadRound, 5_000);
     return () => clearInterval(id);
   }, [loadRound]);
 
@@ -192,34 +199,49 @@ export const ActiveRoundPage = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleConnect = async () => {
-    try {
-      await connectWalletCtx();
-    } catch (e) {
-      showToast('error', String(e));
-    }
+    setModalOpen(true);
   };
 
   const handleCreateRound = async () => {
-    if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
+    if (!walletAddress) { setModalOpen(true); return; }
+    if (!prediction || stakeNum <= 0) { showToast('error', 'Enter prediction and stake'); return; }
+    if (stakeNum < MIN_STAKE) { showToast('error', `Minimum stake is ${MIN_STAKE} XLM`); return; }
+    const durationMins = parseInt(createDuration) || 60;
+    if (durationMins < 5) { showToast('error', 'Duration must be at least 5 minutes'); return; }
+    if (durationMins > 4320) { showToast('error', 'Duration cannot exceed 3 days'); return; }
     setLoading(true);
     try {
-      const durationSecs = parseInt(createDuration) * 60;
+      const durationSecs = durationMins * 60;
       const endTime = Math.floor(Date.now() / 1000) + durationSecs;
-      const minStakeXlm = parseFloat(createMinStake) || 1;
-      const { signTransaction } = await import('@stellar/freighter-api');
-      const newId = await createRound(walletAddress, endTime, minStakeXlm, signTransaction);
-      // Record in backend DB
+
+      // Step 1: create round (min stake hardcoded to 100 XLM)
+      const newId = await createRound(walletAddress, endTime, MIN_STAKE, signTx);
+      const newRoundId = parseInt(newId);
+
+      // Record round in backend DB
       const lockTime = Math.floor(Date.now() / 1000) + Math.floor(durationSecs / 2);
       await api.rounds.record({
-        contractRoundId: parseInt(newId),
+        contractRoundId: newRoundId,
         creatorAddress: walletAddress,
         startTime: new Date().toISOString(),
         lockTime: new Date(lockTime * 1000).toISOString(),
         endTime: new Date(endTime * 1000).toISOString(),
-        minStakeStroops: String(Math.floor(minStakeXlm * 10_000_000)),
-      }).catch(() => {/* non-critical */});
-      showToast('success', `Round #${newId} created!`);
-      setShowCreate(false);
+        minStakeStroops: String(Math.floor(MIN_STAKE * 10_000_000)),
+      }).catch(() => {});
+
+      // Step 2: place bet in the same round
+      const txHash = await placeBet(walletAddress, newRoundId, predNum, stakeNum, signTx);
+      await api.bets.record({
+        roundId: newRoundId,
+        bettorAddress: walletAddress,
+        predictedPriceMicroUsd: String(Math.round(predNum * 1_000_000)),
+        stakeAmountStroops: String(Math.floor(stakeNum * 10_000_000)),
+        txHash,
+      }).catch(() => {});
+
+      showToast('success', `Round #${newRoundId} created & bet placed!`);
+      setPrediction('');
+      setStake('');
       await loadRound();
     } catch (e) {
       showToast('error', String(e));
@@ -229,14 +251,14 @@ export const ActiveRoundPage = () => {
   };
 
   const handlePlaceBet = async () => {
-    if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
+    if (!walletAddress) { setModalOpen(true); return; }
     if (!prediction || stakeNum <= 0) { showToast('error', 'Enter prediction and stake'); return; }
+    if (stakeNum < MIN_STAKE) { showToast('error', `Minimum stake is ${MIN_STAKE} XLM`); return; }
     if (phase !== 'open') { showToast('error', 'Betting is closed'); return; }
     if (!roundId || roundId === 0) { showToast('error', 'No active round found'); return; }
     setLoading(true);
     try {
-      const { signTransaction } = await import('@stellar/freighter-api');
-      const txHash = await placeBet(walletAddress, roundId, predNum, stakeNum, signTransaction);
+      const txHash = await placeBet(walletAddress, roundId, predNum, stakeNum, signTx);
       // Record in backend DB
       await api.bets.record({
         roundId,
@@ -260,8 +282,7 @@ export const ActiveRoundPage = () => {
     if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
     setLoading(true);
     try {
-      const { signTransaction } = await import('@stellar/freighter-api');
-      const txHash = await claimReward(walletAddress, roundId, signTransaction);
+      const txHash = await claimReward(walletAddress, roundId, signTx);
       await api.rewards.recordClaim({ address: walletAddress, roundId, txHash }).catch(() => {});
       showToast('success', `Claimed ${myReward.toFixed(2)} XLM!`);
       setMyReward(0);
@@ -275,16 +296,7 @@ export const ActiveRoundPage = () => {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={cn(styles.container, styles.containerMounted)}>
-      {/* Toast */}
-      {toast && (
-        <div className={cn(
-          'fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-bold shadow-xl',
-          toast.type === 'success' ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300' : 'bg-red-500/20 border border-red-500/40 text-red-300'
-        )}>
-          {toast.type === 'success' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          {toast.msg}
-        </div>
-      )}
+      {ToastUI}
 
       {/* Breadcrumb */}
       <div className={styles.breadcrumb}>
@@ -296,34 +308,24 @@ export const ActiveRoundPage = () => {
           </span>
         </div>
         <div className={styles.breadcrumbRight}>
-          {/* Phase badge */}
-          <div className={cn(
-            'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
-            phase === 'open' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-            phase === 'locked' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
-            phase === 'settled' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-            phase === 'cancelled' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
-            'bg-gray-500/10 border-gray-500/30 text-gray-400'
-          )}>
-            <span className={cn(
-              'w-1.5 h-1.5 rounded-full',
-              phase === 'open' ? 'bg-emerald-400 animate-pulse' :
-              phase === 'locked' ? 'bg-yellow-400' :
-              phase === 'settled' ? 'bg-blue-400' : 'bg-gray-400'
-            )} />
-            {phase === 'open' ? 'OPEN' : phase === 'locked' ? 'LOCKED' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : 'ENDED'}
-          </div>
-
-          {/* Wallet */}
-          {walletAddress ? (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300">
-              <Wallet size={12} />
-              {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+          {roundId > 0 && (
+            <div className={cn(
+              'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
+              phase === 'locked' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
+              phase === 'settled' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
+              phase === 'cancelled' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
+              phase === 'ended' ? 'bg-gray-500/10 border-gray-500/30 text-gray-400' :
+              'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            )}>
+              <span className={cn(
+                'w-1.5 h-1.5 rounded-full',
+                phase === 'locked' ? 'bg-yellow-400' :
+                phase === 'settled' ? 'bg-blue-400' :
+                phase === 'cancelled' || phase === 'ended' ? 'bg-gray-400' :
+                'bg-emerald-400 animate-pulse'
+              )} />
+              {phase === 'locked' ? 'LOCKED' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : phase === 'ended' ? 'ENDED' : 'LIVE'}
             </div>
-          ) : (
-            <button onClick={handleConnect} className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-400 hover:bg-emerald-500/20 transition-colors">
-              <Wallet size={12} /> Connect
-            </button>
           )}
         </div>
       </div>
@@ -341,13 +343,7 @@ export const ActiveRoundPage = () => {
                       {livePrice ? formatPrice(livePrice) : '--'}
                     </span>
                   </div>
-                  <button
-                    className={cn(styles.refreshBtn, priceLoading && styles.refreshBtnSpin)}
-                    onClick={() => setPriceLoading(true)}
-                    title="Reconnecting..."
-                  >
-                    <RefreshCw size={13} />
-                  </button>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 </div>
               </div>
               <div className={styles.statsRow}>
@@ -375,15 +371,7 @@ export const ActiveRoundPage = () => {
             </div>
 
             <div className={styles.chartArea}>
-              <div className={styles.chartControls}>
-                {(['1H', '4H', '1D'] as Interval[]).map(tab => (
-                  <button key={tab} onClick={() => setActiveTab(tab)}
-                    className={cn(styles.chartTab, activeTab === tab && styles.activeTab)}>
-                    {tab}
-                  </button>
-                ))}
-              </div>
-              <TradingViewWidget interval={activeTab} height={340} />
+              <TradingViewWidget interval="5" height={340} />
             </div>
           </div>
 
@@ -443,83 +431,148 @@ export const ActiveRoundPage = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ── RIGHT: Prediction + Create ── */}
-        <div className={styles.predictionBox}>
-
-          {/* Create Round */}
-          <div className="glass-card p-4 mb-4">
-            <button
-              onClick={() => setShowCreate(!showCreate)}
-              className="w-full flex items-center justify-between text-sm font-bold text-gray-300 hover:text-white transition-colors"
-            >
-              <span className="flex items-center gap-2"><Plus size={14} /> Create New Round</span>
-              <ChevronRight size={14} className={cn('transition-transform', showCreate && 'rotate-90')} />
-            </button>
-
-            {showCreate && (
-              <div className="mt-4 space-y-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1 uppercase">Duration (minutes, min 10)</label>
-                  <input
-                    type="number" min="10" value={createDuration}
-                    onChange={e => setCreateDuration(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1 uppercase">Min Stake (XLM)</label>
-                  <input
-                    type="number" min="0.1" step="0.1" value={createMinStake}
-                    onChange={e => setCreateMinStake(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/50"
-                  />
-                </div>
-                <div className="text-xs text-gray-500 bg-white/5 rounded-lg p-2">
-                  <p>• Betting open for first {Math.floor(parseInt(createDuration || '60') / 2)} min</p>
-                  <p>• Locked for last {Math.ceil(parseInt(createDuration || '60') / 2)} min</p>
-                  <p>• Auto-cancel if &lt; 2 participants</p>
-                </div>
-                <button
-                  onClick={handleCreateRound} disabled={loading || !walletAddress}
-                  className="w-full py-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-sm font-bold hover:bg-emerald-500/30 disabled:opacity-40 transition-colors"
-                >
-                  {loading ? 'Creating...' : 'Create Round'}
-                </button>
+          {/* Live Feed — left column, always visible */}
+          <div className={cn('glass-card', styles.infoCard)}>
+            <div className={styles.infoTitleArea}>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+              <h4 className={styles.infoTitle}>Live Feed</h4>
+              <span className="ml-auto text-xs text-gray-600 font-mono">{liveBets.length} bet{liveBets.length !== 1 ? 's' : ''}</span>
+            </div>
+            {liveBets.length === 0 ? (
+              <div className="flex flex-col items-center gap-1 py-6">
+                <span className="text-3xl"></span>
+                <p className="text-xs text-gray-500 mt-1">No bets yet this round</p>
+                <p className="text-xs text-gray-600">Be the first to predict!</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left pb-2 text-gray-600 font-semibold uppercase tracking-wider">#</th>
+                      <th className="text-left pb-2 text-gray-600 font-semibold uppercase tracking-wider">Wallet</th>
+                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Predicted</th>
+                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Stake</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveBets.map((bet, i) => (
+                      <tr key={i} className="border-b border-white/5 hover:bg-white/2">
+                        <td className="py-2 text-gray-600">{i + 1}</td>
+                        <td className="py-2 font-mono text-gray-40 0">
+                          {bet.bettorAddress.slice(0, 6)}...{bet.bettorAddress.slice(-4)}
+                        </td>
+                        <td className="py-2 text-right text-white font-bold">${bet.predictedPriceUsd.toFixed(4)}</td>
+                        <td className="py-2 text-right text-emerald-400 font-bold">{bet.stakeAmountXlm.toFixed(0)} XLM</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Predict Card */}
-          <div className={cn('glass-card', styles.predictCard)}>
-            <div className={styles.predictHeader}>
-              <h3 className={styles.predictTitle}>Predict XLM Price</h3>
-              {phase === 'open' && (
+        {/* ── RIGHT: Prediction Panel ── */}
+        <div className={styles.predictionBox}>
+
+          {/* CASE 1: No active round → first person creates + bets */}
+          {!roundId ? (
+            <div className={cn('glass-card', styles.predictCard)}>
+              <div className={styles.predictHeader}>
+                <h3 className={styles.predictTitle}>Start a New Round</h3>
+                <p className={styles.predictSub}>No active round. Be the first — set the end time and place your prediction.</p>
+                {livePrice && (
+                  <div className={styles.currentPriceHint}>
+                    Binance: <strong>{formatPrice(livePrice)}</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.predictForm}>
+                {/* End time */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Round Duration (minutes, min 5)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      type="number" min="5" max="4320" value={createDuration}
+                      onChange={e => setCreateDuration(e.target.value)}
+                      className={styles.input}
+                      placeholder="60"
+                    />
+                    <span className={styles.inputSuffix}>min</span>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Betting open for first {Math.floor(parseInt(createDuration || '60') / 2)} min · max 3 days
+                  </p>
+                </div>
+
+                {/* Price prediction */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Your Price Prediction (USD)</label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      className={styles.input}
+                      placeholder={livePrice ? livePrice.toFixed(4) : '0.1350'}
+                      type="number" step="0.0001" min="0"
+                      value={prediction}
+                      onChange={e => setPrediction(e.target.value)}
+                    />
+                    <span className={styles.inputSuffix}>USD</span>
+                  </div>
+                  {sentiment === 'bull' && <div className={styles.hintBull}><TrendingUp size={11} /> Bullish</div>}
+                  {sentiment === 'bear' && <div className={styles.hintBear}><TrendingDown size={11} /> Bearish</div>}
+                </div>
+
+                {/* Stake */}
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Your Stake (XLM) <span className="text-yellow-400 text-xs">(MIN 100 XLM)</span></label>
+                  <div className={styles.inputWrapper}>
+                    <input
+                      className={styles.input}
+                      placeholder="100" type="number" min="100" step="1"
+                      value={stake}
+                      onChange={e => {
+                        setStake(e.target.value);
+                        const v = parseFloat(e.target.value);
+                        if (v > 0 && v < MIN_STAKE) showToast('error', `Minimum stake is ${MIN_STAKE} XLM`);
+                      }}
+                    />
+                    <span className={styles.inputSuffix}>XLM</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCreateRound}
+                  disabled={loading || !walletAddress || !prediction || stakeNum < MIN_STAKE}
+                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum < MIN_STAKE) && styles.submitDisabled)}
+                >
+                  {loading ? 'Creating...' : !walletAddress ? 'Connect Wallet' : 'Create Round & Predict'}
+                </button>
+
+                <div className={styles.securityNote}>
+                  <Lock className="w-3 h-3" />
+                  Secured by Stellar Smart Contracts · Oracle: Binance
+                </div>
+              </div>
+            </div>
+
+          ) : phase === 'open' ? (
+            /* CASE 2: Active round, betting open → place bet */
+            <div className={cn('glass-card', styles.predictCard)}>
+              <div className={styles.predictHeader}>
+                <h3 className={styles.predictTitle}>Predict XLM Price</h3>
                 <p className={styles.predictSub}>
                   Betting closes in <span className={styles.timerInline}>{formatCountdown(timeToLock)}</span>
                 </p>
-              )}
-              {phase === 'locked' && (
-                <p className={cn(styles.predictSub, 'text-yellow-400')}>
-                  <Lock size={12} className="inline mr-1" />
-                  Betting locked — round ends in {formatCountdown(timeToEnd)}
-                </p>
-              )}
-              {phase === 'ended' && (
-                <p className={cn(styles.predictSub, 'text-gray-500')}>
-                  <Clock size={12} className="inline mr-1" />
-                  Awaiting settlement...
-                </p>
-              )}
-              {livePrice && (
-                <div className={styles.currentPriceHint}>
-                  Binance: <strong>{formatPrice(livePrice)}</strong>
-                </div>
-              )}
-            </div>
+                {livePrice && (
+                  <div className={styles.currentPriceHint}>
+                    Binance: <strong>{formatPrice(livePrice)}</strong>
+                  </div>
+                )}
+              </div>
 
-            {phase === 'open' ? (
               <div className={styles.predictForm}>
                 <div className={styles.inputGroup}>
                   <label className={styles.inputLabel}>Price Prediction (USD)</label>
@@ -538,13 +591,17 @@ export const ActiveRoundPage = () => {
                 </div>
 
                 <div className={styles.inputGroup}>
-                  <label className={styles.inputLabel}>Stake Amount (XLM)</label>
+                  <label className={styles.inputLabel}>Stake Amount (XLM) <span className="text-yellow-400 text-xs">(MIN 100 XLM)</span></label>
                   <div className={styles.inputWrapper}>
                     <input
                       className={styles.input}
-                      placeholder="10.00" type="number" min="0" step="0.5"
+                      placeholder="100" type="number" min="100" step="1"
                       value={stake}
-                      onChange={e => setStake(e.target.value)}
+                      onChange={e => {
+                        setStake(e.target.value);
+                        const v = parseFloat(e.target.value);
+                        if (v > 0 && v < MIN_STAKE) showToast('error', `Minimum stake is ${MIN_STAKE} XLM`);
+                      }}
                     />
                     <span className={styles.inputSuffix}>XLM</span>
                   </div>
@@ -566,10 +623,10 @@ export const ActiveRoundPage = () => {
 
                 <button
                   onClick={handlePlaceBet}
-                  disabled={loading || !walletAddress || !prediction || stakeNum <= 0 || !roundId}
-                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum <= 0 || !roundId) && styles.submitDisabled)}
+                  disabled={loading || !walletAddress || !prediction || stakeNum < MIN_STAKE}
+                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum < MIN_STAKE) && styles.submitDisabled)}
                 >
-                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : !roundId ? 'No Active Round' : 'Submit Prediction'}
+                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : 'Submit Prediction'}
                 </button>
 
                 <div className={styles.securityNote}>
@@ -577,15 +634,43 @@ export const ActiveRoundPage = () => {
                   Secured by Stellar Smart Contracts · Oracle: Binance
                 </div>
               </div>
-            ) : (
-              <div className="p-4 text-center text-gray-500 text-sm">
-                {phase === 'locked' && '🔒 Betting is closed. Waiting for round to end.'}
-                {phase === 'ended' && '⏳ Round ended. Awaiting oracle settlement.'}
-                {phase === 'settled' && settlePrice && `✅ Settled at ${formatPrice(settlePrice)}`}
-                {phase === 'cancelled' && '❌ Round cancelled — not enough participants.'}
+            </div>
+
+          ) : (
+            /* CASE 3: Round locked / ended / settled / cancelled */
+            <div className={cn('glass-card', styles.predictCard)}>
+              <div className="p-4 text-center text-gray-500 text-sm space-y-2">
+                {phase === 'locked' && (
+                  <>
+                    <p className="text-yellow-400 font-bold">🔒 Betting Locked</p>
+                    <p>Round ends in <span className="text-white font-mono">{formatCountdown(timeToEnd)}</span></p>
+                  </>
+                )}
+                {phase === 'ended' && <p>⏳ Round ended. Awaiting oracle settlement...</p>}
+                {phase === 'settled' && settlePrice && (
+                  <>
+                    <p className="text-blue-400 font-bold">✅ Round Settled</p>
+                    <p>Final price: <span className="text-white font-bold">{formatPrice(settlePrice)}</span></p>
+                    {myReward > 0 && (
+                      <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                        <p className="text-emerald-300 font-bold">🎉 You won {myReward.toFixed(2)} XLM!</p>
+                        <button onClick={handleClaim} disabled={loading}
+                          className="mt-2 w-full py-2 rounded-lg bg-emerald-500 text-black text-sm font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors">
+                          {loading ? 'Claiming...' : 'Claim Reward'}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+                {phase === 'cancelled' && (
+                  <>
+                    <p className="text-red-400 font-bold">❌ Round Cancelled</p>
+                    <p className="text-xs">Less than 2 participants. Stakes refunded.</p>
+                  </>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* How it works */}
           <div className={cn('glass-card', styles.infoCard)}>
@@ -595,11 +680,11 @@ export const ActiveRoundPage = () => {
             </div>
             <ul className={styles.infoList}>
               {[
-                'Anyone can create a round (min 10 min duration).',
+                'First person sets the round duration (min 5 min, max 3 days).',
                 'Bet in the first 50% of the round. Locked after that.',
-                'If < 2 participants at end → cancelled & refunded.',
+                'Need at least 3 participants — otherwise cancelled & refunded.',
                 'Oracle fetches Binance price at end_time.',
-                'Top 3 closest predictions share 60% / 25% / 15% of pool.',
+                '1st place: stake back + 65% of losers pool. 2nd place: stake back + 35%. Others lose stake.',
               ].map((text, i) => (
                 <li key={i} className={styles.infoItem}>
                   <span className={styles.infoStep}>0{i + 1}.</span>

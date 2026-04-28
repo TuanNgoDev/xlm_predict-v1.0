@@ -69,13 +69,13 @@ describe('calculateRewards', () => {
     stakeAmountStroops: 100_000_000n,
   });
 
-  it('distributes 60/25/15 for 3 participants', () => {
+  it('distributes 50/30/20 for 3 participants', () => {
     const ranked = [makeRanked(1, addr(1)), makeRanked(2, addr(2)), makeRanked(3, addr(3))];
     const rewards = calculateRewards(ranked, pool, fee);
     const prizePool = 950_000_000n;
-    expect(rewards[0].rewardStroops).toBe((prizePool * 60n) / 100n);
-    expect(rewards[1].rewardStroops).toBe((prizePool * 25n) / 100n);
-    expect(rewards[2].rewardStroops).toBe((prizePool * 15n) / 100n);
+    expect(rewards[0].rewardStroops).toBe((prizePool * 50n) / 100n);
+    expect(rewards[1].rewardStroops).toBe((prizePool * 30n) / 100n);
+    expect(rewards[2].rewardStroops).toBe((prizePool * 20n) / 100n);
   });
 
   it('distributes 60/40 for 2 participants', () => {

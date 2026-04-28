@@ -3,34 +3,23 @@
 import React, { useEffect, useRef } from 'react';
 import styles from './TradingViewWidget.module.css';
 
-type Interval = '1H' | '4H' | '1D';
-
-const INTERVAL_MAP: Record<Interval, string> = {
-  '1H': '60',
-  '4H': '240',
-  '1D': 'D',
-};
-
 interface TradingViewWidgetProps {
-  interval: Interval;
+  interval?: string; // TradingView interval string: '5', '15', '60', '240', 'D', etc.
   height?: number;
 }
 
 export const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
-  interval,
+  interval = '5',
   height = 380,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const scriptRef = useRef<HTMLScriptElement | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Clear previous widget
     container.innerHTML = '';
 
-    // TradingView requires a fresh script injection each time the widget config changes
     const script = document.createElement('script');
     script.src =
       'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
@@ -39,10 +28,10 @@ export const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
     script.innerHTML = JSON.stringify({
       autosize: true,
       symbol: 'BINANCE:XLMUSDT',
-      interval: INTERVAL_MAP[interval],
+      interval,
       timezone: 'Etc/UTC',
       theme: 'dark',
-      style: '1',           // Candlestick
+      style: '1',
       locale: 'en',
       toolbar_bg: '#0d1117',
       enable_publishing: false,
@@ -53,7 +42,6 @@ export const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
       gridColor: 'rgba(255, 255, 255, 0.04)',
       hide_volume: false,
       support_host: 'https://www.tradingview.com',
-      container_id: 'tv_xlm_chart',
       overrides: {
         'paneProperties.background': '#090b11',
         'paneProperties.backgroundType': 'solid',
@@ -67,7 +55,6 @@ export const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
     });
 
     container.appendChild(script);
-    scriptRef.current = script;
 
     return () => {
       if (container) container.innerHTML = '';
@@ -76,11 +63,7 @@ export const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({
 
   return (
     <div className={styles.wrapper} style={{ height }}>
-      <div
-        id="tv_xlm_chart"
-        ref={containerRef}
-        className={styles.tvContainer}
-      />
+      <div ref={containerRef} className={styles.tvContainer} />
     </div>
   );
 };

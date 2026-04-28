@@ -1,6 +1,6 @@
 // Mirrors smart contract reward distribution logic
-// REWARD_PCTS = [60, 25, 15] for top-3; [60, 40] for 2 participants
-const REWARD_PCTS_3 = [60n, 25n, 15n];
+// REWARD_PCTS = [50, 30, 20] for top-3; [60, 40] for 2 participants
+const REWARD_PCTS_3 = [50n, 30n, 20n];
 const REWARD_PCTS_2 = [60n, 40n];
 const FEE_BPS_DEFAULT = 500n; // 5%
 const BPS_DENOM = 10_000n;

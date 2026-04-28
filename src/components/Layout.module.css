@@ -4,15 +4,11 @@
   min-height: 100vh;
 }
 
-.body {
-  display: flex;
-  flex: 1;
-}
-
 .main {
   flex: 1;
-  padding: 32px;
+  padding: 20px 24px;
   overflow: hidden;
+  width: 100%;
 }
 
 .glowContainer {
@@ -41,8 +37,8 @@
 
 .glowTwo {
   position: fixed;
-  top: 80px;
-  left: 256px;
+  top: 60px;
+  left: 0;
   padding: 32px;
   opacity: 0.1;
 }

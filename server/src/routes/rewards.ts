@@ -62,6 +62,13 @@ router.post('/record-claim', validate(recordClaimSchema), async (req: Request, r
       return;
     }
 
+    // Update Reward transaction to confirmed
+    await query(
+      `UPDATE transactions SET status = 'confirmed', tx_hash = $1
+       WHERE wallet_address = $2 AND round_id = $3 AND type = 'Reward'`,
+      [body.txHash, body.address, body.roundId]
+    );
+
     // Insert claim transaction only if not already recorded (idempotent)
     const existing = await query<{ id: number }>(
       `SELECT id FROM transactions WHERE wallet_address = $1 AND round_id = $2 AND type = 'Claim'`,

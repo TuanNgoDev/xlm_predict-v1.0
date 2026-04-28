@@ -2,6 +2,9 @@
   "name": "xmlpredict",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -9,6 +12,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@stellar/freighter-api": "^6.0.1",
+    "@stellar/stellar-sdk": "^15.0.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.11.0",
     "react": "19.2.4",

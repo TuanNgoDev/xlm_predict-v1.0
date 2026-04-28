@@ -41,9 +41,9 @@ describe('settlement ranking logic', () => {
     const rewards = calculateRewards(ranked, totalPool, 500n);
     const prizePool = totalPool - (totalPool * 500n) / 10_000n; // 427_500_000n
 
-    expect(rewards[0].rewardStroops).toBe((prizePool * 60n) / 100n);
-    expect(rewards[1].rewardStroops).toBe((prizePool * 25n) / 100n);
-    expect(rewards[2].rewardStroops).toBe((prizePool * 15n) / 100n);
+    expect(rewards[0].rewardStroops).toBe((prizePool * 50n) / 100n);
+    expect(rewards[1].rewardStroops).toBe((prizePool * 30n) / 100n);
+    expect(rewards[2].rewardStroops).toBe((prizePool * 20n) / 100n);
   });
 
   it('skips processing when round is already Settled (idempotency)', () => {

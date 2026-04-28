@@ -143,7 +143,7 @@ export async function applySettlement(
     for (const reward of rewards) {
       await client.query(
         `INSERT INTO transactions (wallet_address, type, amount_stroops, round_id, tx_hash, status)
-         VALUES ($1, 'Reward', $2, $3, $4, 'confirmed')`,
+         VALUES ($1, 'Reward', $2, $3, $4, 'pending')`,
         [reward.bettorAddress, reward.rewardStroops.toString(), roundId, txHash]
       );
     }

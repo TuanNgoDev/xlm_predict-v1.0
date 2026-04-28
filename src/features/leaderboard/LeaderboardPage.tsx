@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal as Sliders, Trophy } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useToast } from '../../lib/useToast';
 import { api, LeaderboardEntry } from '../../services/api';
 import styles from './LeaderboardPage.module.css';
 
 export const LeaderboardPage = () => {
+  const { showToast, ToastUI } = useToast();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -12,7 +14,7 @@ export const LeaderboardPage = () => {
   useEffect(() => {
     api.leaderboard.getGlobal({ limit: 50 })
       .then(res => setEntries(res.data))
-      .catch(console.error)
+      .catch(() => showToast('error', 'Failed to load leaderboard'))
       .finally(() => setLoading(false));
   }, []);
 

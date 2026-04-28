@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, PlusCircle, Download } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useToast } from '../../lib/useToast';
 import { api, ApiPosition } from '../../services/api';
 import { useWallet } from '../../lib/walletContext';
 import styles from './PositionsPage.module.css';
@@ -61,6 +62,7 @@ const PositionCard = ({ position }: { position: ApiPosition }) => {
 
 export const PositionsPage = () => {
   const { address } = useWallet();
+  const { showToast, ToastUI } = useToast();
   const [positions, setPositions] = useState<ApiPosition[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +71,7 @@ export const PositionsPage = () => {
     setLoading(true);
     api.bets.getPositions(address)
       .then(setPositions)
-      .catch(console.error)
+      .catch(e => showToast('error', 'Failed to load positions'))
       .finally(() => setLoading(false));
   }, [address]);
 
@@ -79,6 +81,7 @@ export const PositionsPage = () => {
 
   return (
     <div className={styles.container}>
+      {ToastUI}
       <header className={styles.header}>
         <div className={styles.titleGroup}>
           <h1 className={styles.title}>My Positions</h1>

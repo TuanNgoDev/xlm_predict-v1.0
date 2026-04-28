@@ -1,21 +1,16 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
-
 import styles from './Layout.module.css';
 
 export const Layout = () => {
   return (
     <div className={styles.container}>
       <Navbar />
-      <div className={styles.body}>
-        <Sidebar />
-        <main className={styles.main}>
-          <Outlet />
-        </main>
-      </div>
-      
+      <main className={styles.main}>
+        <Outlet />
+      </main>
+
       {/* Background Decorative Elements */}
       <div className={styles.glowContainer}>
         <div className={styles.glowOne}>
