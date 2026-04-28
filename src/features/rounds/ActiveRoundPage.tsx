@@ -97,17 +97,42 @@ export const ActiveRoundPage = () => {
   // ── Load current round ────────────────────────────────────────────────────
   const loadRound = useCallback(async () => {
     try {
-      const id = await getCurrentRound();
-      setRoundId(id);
-      if (id > 0) {
-        const r = await getRound(id);
-        setRound(r);
-        const cnt = await getParticipantCount(id);
-        setParticipantCount(cnt);
-        if (walletAddress) {
-          const reward = await getReward(id, walletAddress);
-          setMyReward(Number(reward) / 10_000_000);
+      // Try backend DB first (faster, no RPC needed)
+      let id = 0;
+      try {
+        const current = await api.rounds.getCurrent();
+        id = current.contractRoundId;
+        setRoundId(id);
+        // Map API response to RoundData shape
+        setRound({
+          id: current.contractRoundId,
+          creator: current.creatorAddress,
+          start_time: BigInt(Math.floor(new Date(current.startTime).getTime() / 1000)),
+          lock_time: BigInt(Math.floor(new Date(current.lockTime).getTime() / 1000)),
+          end_time: BigInt(Math.floor(new Date(current.endTime).getTime() / 1000)),
+          min_stake: BigInt(Math.round(current.minStakeXlm * 10_000_000)),
+          total_pool: BigInt(Math.round(current.totalPoolXlm * 10_000_000)),
+          status: current.status as 'Open' | 'Settled' | 'Cancelled',
+          settle_price: current.settlePrice
+            ? BigInt(Math.round(current.settlePrice * 1_000_000))
+            : 0n,
+        });
+        setParticipantCount(current.participantCount);
+      } catch {
+        // Fallback to contract RPC
+        id = await getCurrentRound();
+        setRoundId(id);
+        if (id > 0) {
+          const r = await getRound(id);
+          setRound(r);
+          const cnt = await getParticipantCount(id);
+          setParticipantCount(cnt);
         }
+      }
+
+      if (id > 0 && walletAddress) {
+        const reward = await getReward(id, walletAddress);
+        setMyReward(Number(reward) / 10_000_000);
       }
     } catch (e) {
       console.error('loadRound:', e);
@@ -178,6 +203,7 @@ export const ActiveRoundPage = () => {
     if (!walletAddress) { showToast('error', 'Connect wallet first'); return; }
     if (!prediction || stakeNum <= 0) { showToast('error', 'Enter prediction and stake'); return; }
     if (phase !== 'open') { showToast('error', 'Betting is closed'); return; }
+    if (!roundId || roundId === 0) { showToast('error', 'No active round found'); return; }
     setLoading(true);
     try {
       const { signTransaction } = await import('@stellar/freighter-api');
@@ -510,10 +536,10 @@ export const ActiveRoundPage = () => {
 
                 <button
                   onClick={handlePlaceBet}
-                  disabled={loading || !walletAddress || !prediction || stakeNum <= 0}
-                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum <= 0) && styles.submitDisabled)}
+                  disabled={loading || !walletAddress || !prediction || stakeNum <= 0 || !roundId}
+                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum <= 0 || !roundId) && styles.submitDisabled)}
                 >
-                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : 'Submit Prediction'}
+                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : !roundId ? 'No Active Round' : 'Submit Prediction'}
                 </button>
 
                 <div className={styles.securityNote}>
