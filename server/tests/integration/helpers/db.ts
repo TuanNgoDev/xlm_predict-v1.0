@@ -27,4 +27,7 @@ export async function teardownTestDb() {
   await pool.end();
 }
 
-export const validAddress = (n = 1) => `G${'A'.repeat(54)}${String(n).padStart(1, '0')}`;
+export const validAddress = (n = 1) => {
+  const suffix = String(n).padStart(2, '0');
+  return `G${'A'.repeat(53)}${suffix}`;
+};
