@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Kiro IDE
+.kiro/
+
+# Rust build artifacts
+contracts/prediction_pool/target/

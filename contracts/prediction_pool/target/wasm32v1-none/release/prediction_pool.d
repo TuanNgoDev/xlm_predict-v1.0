@@ -1,1 +1,0 @@
-F:\xlmpredict\XLMPredict\contracts\prediction_pool\target\wasm32v1-none\release\prediction_pool.wasm: F:\xlmpredict\XLMPredict\contracts\prediction_pool\src\lib.rs F:\xlmpredict\XLMPredict\contracts\prediction_pool\src\storage.rs F:\xlmpredict\XLMPredict\contracts\prediction_pool\src\types.rs
