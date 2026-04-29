@@ -202,6 +202,11 @@ export const ActiveRoundPage = () => {
   const totalPoolXlm = round ? Number(round.total_pool) / 10_000_000 : 0;
   const settlePrice = round && round.settle_price > 0 ? microUsdToUsd(round.settle_price) : null;
 
+  // Check if current wallet already placed a bet this round
+  const alreadyBet = !!walletAddress && liveBets.some(
+    b => b.bettorAddress.toLowerCase() === walletAddress.toLowerCase()
+  );
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleConnect = async () => {
     setModalOpen(true);
@@ -672,10 +677,10 @@ export const ActiveRoundPage = () => {
 
                 <button
                   onClick={handlePlaceBet}
-                  disabled={loading || !walletAddress || !prediction || stakeNum < MIN_STAKE}
-                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum < MIN_STAKE) && styles.submitDisabled)}
+                  disabled={loading || !walletAddress || !prediction || stakeNum < MIN_STAKE || alreadyBet}
+                  className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum < MIN_STAKE || alreadyBet) && styles.submitDisabled)}
                 >
-                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : 'Submit Prediction'}
+                  {loading ? 'Submitting...' : !walletAddress ? 'Connect Wallet' : alreadyBet ? '✅ Already Predicted' : 'Submit Prediction'}
                 </button>
 
                 <div className={styles.securityNote}>
@@ -736,6 +741,7 @@ export const ActiveRoundPage = () => {
             <ul className={styles.infoList}>
               {[
                 'First person sets the round duration (min 5 min, max 3 days).',
+                'Each wallet can only place ONE bet per round.',
                 'Bet in the first 50% of the round. Locked after that.',
                 'Need at least 3 participants — otherwise cancelled & refunded.',
                 'Oracle fetches Binance price at end_time.',
