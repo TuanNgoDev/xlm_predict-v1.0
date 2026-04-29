@@ -233,18 +233,32 @@ export const ActiveRoundPage = () => {
         lockTime: new Date(lockTime * 1000).toISOString(),
         endTime: new Date(endTime * 1000).toISOString(),
         minStakeStroops: String(Math.floor(MIN_STAKE * 10_000_000)),
-      }).catch(() => {});
+      }).catch((e) => console.warn('rounds.record failed:', e));
 
       // Step 2: place bet in the same round
       setLoadingStep('Step 2/2: Placing bet — sign in wallet…');
       const txHash = await placeBet(walletAddress, newRoundId, predNum, stakeNum, signTx);
+
+      // Optimistic update live feed immediately
+      setLiveBets(prev => [...prev, {
+        roundId: newRoundId,
+        bettorAddress: walletAddress,
+        predictedPriceUsd: predNum,
+        stakeAmountXlm: stakeNum,
+        rank: null,
+        rewardXlm: 0,
+        claimed: false,
+        txHash,
+        createdAt: new Date().toISOString(),
+      }]);
+
       await api.bets.record({
         roundId: newRoundId,
         bettorAddress: walletAddress,
         predictedPriceMicroUsd: String(Math.round(predNum * 1_000_000)),
         stakeAmountStroops: String(Math.floor(stakeNum * 10_000_000)),
         txHash,
-      }).catch(() => {});
+      }).catch((e) => console.warn('bets.record failed:', e));
 
       showToast('success', `Round #${newRoundId} created & bet placed!`);
       setPrediction('');
@@ -268,6 +282,20 @@ export const ActiveRoundPage = () => {
     setLoading(true);
     try {
       const txHash = await placeBet(walletAddress, roundId, predNum, stakeNum, signTx);
+
+      // Optimistic update live feed immediately
+      setLiveBets(prev => [...prev, {
+        roundId,
+        bettorAddress: walletAddress,
+        predictedPriceUsd: predNum,
+        stakeAmountXlm: stakeNum,
+        rank: null,
+        rewardXlm: 0,
+        claimed: false,
+        txHash,
+        createdAt: new Date().toISOString(),
+      }]);
+
       // Record in backend DB
       await api.bets.record({
         roundId,
@@ -275,7 +303,7 @@ export const ActiveRoundPage = () => {
         predictedPriceMicroUsd: String(Math.round(predNum * 1_000_000)),
         stakeAmountStroops: String(Math.floor(stakeNum * 10_000_000)),
         txHash,
-      }).catch(() => {});
+      }).catch((e) => console.warn('bets.record failed:', e));
       showToast('success', 'Bet placed successfully!');
       setPrediction('');
       setStake('');
@@ -454,7 +482,7 @@ export const ActiveRoundPage = () => {
             </div>
             {liveBets.length === 0 ? (
               <div className="flex flex-col items-center gap-1 py-6">
-                <span className="text-3xl">🎯</span>
+                <span className="text-3xl"></span>
                 <p className="text-xs text-gray-500 mt-1">No bets yet this round</p>
                 <p className="text-xs text-gray-600">Be the first to predict!</p>
               </div>
