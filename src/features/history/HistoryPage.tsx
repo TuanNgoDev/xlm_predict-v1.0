@@ -1,137 +1,173 @@
 import React, { useState, useEffect } from 'react';
-import {
-  TrendingUp, Search, ExternalLink, History as HistoryIcon,
-  ChevronLeft, ChevronRight, Download,
-} from 'lucide-react';
+import { Trophy, Users, DollarSign, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { api, ApiTransaction } from '../../services/api';
-import { useWallet } from '../../lib/walletContext';
+import { api, ApiRound, RoundLeaderboardEntry } from '../../services/api';
 import styles from './HistoryPage.module.css';
 
+// Format UTC+7
+function formatUTC7(dateStr: string): string {
+  const d = new Date(dateStr);
+  const utc7 = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${utc7.getUTCFullYear()}-${pad(utc7.getUTCMonth() + 1)}-${pad(utc7.getUTCDate())} ${pad(utc7.getUTCHours())}:${pad(utc7.getUTCMinutes())} UTC+7`;
+}
+
+function shortAddr(addr: string) {
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
+
+interface RoundWithWinners extends ApiRound {
+  winners?: RoundLeaderboardEntry[];
+}
+
 const StatusBadge = ({ status }: { status: string }) => {
-  const s = status.toUpperCase();
-  const badgeStyles: Record<string, string> = {
-    CONFIRMED: styles.successBadge,
-    PENDING: styles.pendingBadge,
-    FAILED: styles.failedBadge,
+  const map: Record<string, string> = {
+    Settled: styles.badgeSettled,
+    Cancelled: styles.badgeCancelled,
+    Open: styles.badgeOpen,
+    Locked: styles.badgeLocked,
   };
   return (
-    <div className={cn(styles.statusBadge, badgeStyles[s] ?? styles.pendingBadge)}>
-      <span className={cn(styles.badgeDot, s === 'CONFIRMED' ? styles.successDot : s === 'PENDING' ? styles.pendingDot : styles.failedDot)} />
-      {s}
-    </div>
+    <span className={cn(styles.badge, map[status] ?? styles.badgeOpen)}>
+      {status}
+    </span>
   );
 };
 
 export const HistoryPage = () => {
-  const { address } = useWallet();
-  const [transactions, setTransactions] = useState<ApiTransaction[]>([]);
+  const [rounds, setRounds] = useState<RoundWithWinners[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState('');
-  const limit = 20;
+  const limit = 10;
 
   useEffect(() => {
-    if (!address) return;
     setLoading(true);
-    api.users.getHistory(address, { page, limit })
-      .then(res => {
-        setTransactions(res.data);
+    api.rounds.list({ page, limit, status: 'Settled' })
+      .then(async (res) => {
         setTotal(res.pagination.total);
+        setTotalPages(res.pagination.totalPages);
+
+        // Fetch top 2 winners for each settled round in parallel
+        const withWinners = await Promise.all(
+          res.data.map(async (round) => {
+            try {
+              const winners = await api.leaderboard.getByRound(round.contractRoundId);
+              return { ...round, winners: winners.slice(0, 2) };
+            } catch {
+              return { ...round, winners: [] };
+            }
+          })
+        );
+        setRounds(withWinners);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [address, page]);
-
-  const filtered = transactions.filter(tx =>
-    !search || tx.txHash?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const totalPages = Math.ceil(total / limit);
+  }, [page]);
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Transaction History</h1>
-        <p className={styles.subTitle}>A chronological ledger of your stellar interactions.</p>
+        <h1 className={styles.title}>Round History</h1>
+        <p className={styles.subTitle}>All settled rounds — results, oracle price, and winners.</p>
       </header>
 
       <div className={styles.ledgerContainer}>
         <div className={styles.ledgerHeader}>
-          <div className={styles.filterTabs}>
-            <button className={cn(styles.filterTab, styles.activeFilterTab)}>All Activities</button>
-          </div>
-          <div className={styles.searchWrapper}>
-            <Search className={styles.searchIcon} />
-            <input
-              className={styles.searchInput}
-              placeholder="Search hash..."
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
+          <span className={styles.ledgerTitle}>Settled Rounds</span>
+          <span className={styles.ledgerCount}>{total} rounds</span>
         </div>
 
-        {!address ? (
-          <div className="p-8 text-center text-gray-500">Connect your wallet to view history</div>
-        ) : loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+        {loading ? (
+          <div className="p-10 text-center text-gray-500">Loading...</div>
+        ) : rounds.length === 0 ? (
+          <div className="p-10 text-center text-gray-500">No settled rounds yet.</div>
         ) : (
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr className={styles.tableHead}>
-                  <th className={styles.th}>Type</th>
-                  <th className={styles.th}>Amount (XLM)</th>
-                  <th className={styles.th}>Status</th>
                   <th className={styles.th}>Round</th>
-                  <th className={cn(styles.th, styles.alignRight)}>Transaction Hash</th>
+                  <th className={styles.th}>
+                    <span className="flex items-center gap-1"><Users size={12} /> Participants</span>
+                  </th>
+                  <th className={styles.th}>
+                    <span className="flex items-center gap-1"><DollarSign size={12} /> Oracle Price</span>
+                  </th>
+                  <th className={styles.th}>Pool (XLM)</th>
+                  <th className={styles.th}>
+                    <span className="flex items-center gap-1"><Trophy size={12} className="text-yellow-400" /> 🥇 Top 1</span>
+                  </th>
+                  <th className={styles.th}>
+                    <span className="flex items-center gap-1"><Trophy size={12} className="text-gray-400" /> 🥈 Top 2</span>
+                  </th>
+                  <th className={styles.th}>End Time</th>
+                  <th className={styles.th}>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(tx => (
-                  <tr key={tx.id} className={styles.tableRow}>
-                    <td className={styles.td}>
-                      <div className={styles.typeCell}>
-                        <div className={styles.typeIconArea}>
-                          <HistoryIcon className="w-4 h-4" />
-                        </div>
-                        <span className={styles.typeName}>{tx.type}</span>
-                      </div>
-                    </td>
-                    <td className={styles.td}>
-                      <span className={cn(styles.amount, tx.amountXlm > 0 && styles.positive)}>
-                        {tx.type === 'Stake' ? `- ${tx.amountXlm.toFixed(2)}` : `+ ${tx.amountXlm.toFixed(2)}`} XLM
-                      </span>
-                    </td>
-                    <td className={styles.td}>
-                      <StatusBadge status={tx.status} />
-                    </td>
-                    <td className={styles.td}>
-                      {tx.roundId ? `#${tx.roundId}` : '—'}
-                    </td>
-                    <td className={cn(styles.td, styles.hash)}>
-                      {tx.txHash ? (
-                        <a
-                          className={styles.hashLink}
-                          href={`https://stellar.expert/explorer/testnet/tx/${tx.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {tx.txHash.slice(0, 8)}...{tx.txHash.slice(-6)}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : '—'}
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="p-8 text-center text-gray-500">No transactions yet</td>
-                  </tr>
-                )}
+                {rounds.map((round) => {
+                  const top1 = round.winners?.[0];
+                  const top2 = round.winners?.[1];
+                  return (
+                    <tr key={round.contractRoundId} className={styles.tableRow}>
+                      {/* Round ID */}
+                      <td className={styles.td}>
+                        <span className={styles.roundId}>#{round.contractRoundId}</span>
+                      </td>
+
+                      {/* Participants */}
+                      <td className={styles.td}>
+                        <span className={styles.participants}>{round.participantCount}</span>
+                      </td>
+
+                      {/* Oracle settle price */}
+                      <td className={styles.td}>
+                        <span className={styles.price}>
+                          {round.settlePrice != null
+                            ? `$${round.settlePrice.toFixed(6)}`
+                            : '—'}
+                        </span>
+                      </td>
+
+                      {/* Pool */}
+                      <td className={styles.td}>
+                        <span className={styles.pool}>{round.totalPoolXlm.toFixed(0)} XLM</span>
+                      </td>
+
+                      {/* Top 1 */}
+                      <td className={styles.td}>
+                        {top1 ? (
+                          <div className={styles.winnerCell}>
+                            <span className={styles.winnerAddr}>{shortAddr(top1.bettorAddress)}</span>
+                            <span className={styles.winnerReward}>+{top1.rewardXlm.toFixed(2)} XLM</span>
+                          </div>
+                        ) : <span className="text-gray-600">—</span>}
+                      </td>
+
+                      {/* Top 2 */}
+                      <td className={styles.td}>
+                        {top2 ? (
+                          <div className={styles.winnerCell}>
+                            <span className={styles.winnerAddr}>{shortAddr(top2.bettorAddress)}</span>
+                            <span className={styles.winnerReward2}>+{top2.rewardXlm.toFixed(2)} XLM</span>
+                          </div>
+                        ) : <span className="text-gray-600">—</span>}
+                      </td>
+
+                      {/* End time UTC+7 */}
+                      <td className={styles.td}>
+                        <span className={styles.timestamp}>{formatUTC7(round.endTime)}</span>
+                      </td>
+
+                      {/* Status */}
+                      <td className={styles.td}>
+                        <StatusBadge status={round.status} />
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -139,13 +175,21 @@ export const HistoryPage = () => {
 
         {totalPages > 1 && (
           <div className={styles.footer}>
-            <div>Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</div>
+            <span>Page {page} / {totalPages} · {total} rounds</span>
             <div className={styles.pagination}>
-              <button className={styles.pageButton} onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+              <button
+                className={styles.pageButton}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button className={cn(styles.pageButton, styles.activePageButton)}>{page}</button>
-              <button className={styles.pageButton} onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              <span className={cn(styles.pageButton, styles.activePageButton)}>{page}</span>
+              <button
+                className={styles.pageButton}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

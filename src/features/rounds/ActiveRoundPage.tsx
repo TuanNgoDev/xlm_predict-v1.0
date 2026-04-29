@@ -454,7 +454,7 @@ export const ActiveRoundPage = () => {
             </div>
             {liveBets.length === 0 ? (
               <div className="flex flex-col items-center gap-1 py-6">
-                <span className="text-3xl"></span>
+                <span className="text-3xl">🎯</span>
                 <p className="text-xs text-gray-500 mt-1">No bets yet this round</p>
                 <p className="text-xs text-gray-600">Be the first to predict!</p>
               </div>
@@ -467,19 +467,27 @@ export const ActiveRoundPage = () => {
                       <th className="text-left pb-2 text-gray-600 font-semibold uppercase tracking-wider">Wallet</th>
                       <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Predicted</th>
                       <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Stake</th>
+                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Time (UTC+7)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {liveBets.map((bet, i) => (
-                      <tr key={i} className="border-b border-white/5 hover:bg-white/2">
-                        <td className="py-2 text-gray-600">{i + 1}</td>
-                        <td className="py-2 font-mono text-gray-40 0">
-                          {bet.bettorAddress.slice(0, 6)}...{bet.bettorAddress.slice(-4)}
-                        </td>
-                        <td className="py-2 text-right text-white font-bold">${bet.predictedPriceUsd.toFixed(4)}</td>
-                        <td className="py-2 text-right text-emerald-400 font-bold">{bet.stakeAmountXlm.toFixed(0)} XLM</td>
-                      </tr>
-                    ))}
+                    {liveBets.map((bet, i) => {
+                      const d = new Date(bet.createdAt);
+                      const utc7 = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      const timeStr = `${pad(utc7.getUTCHours())}:${pad(utc7.getUTCMinutes())}:${pad(utc7.getUTCSeconds())}`;
+                      return (
+                        <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="py-2 text-gray-600">{i + 1}</td>
+                          <td className="py-2 font-mono text-gray-300">
+                            {bet.bettorAddress.slice(0, 6)}...{bet.bettorAddress.slice(-4)}
+                          </td>
+                          <td className="py-2 text-right text-white font-bold">${bet.predictedPriceUsd.toFixed(4)}</td>
+                          <td className="py-2 text-right text-emerald-400 font-bold">{bet.stakeAmountXlm.toFixed(0)} XLM</td>
+                          <td className="py-2 text-right text-gray-500 font-mono">{timeStr}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
