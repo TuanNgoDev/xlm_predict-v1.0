@@ -40,6 +40,15 @@ export async function getExpiredOpenRounds(): Promise<DbRound[]> {
 }
 
 /**
+ * Find Open rounds that passed lock_time with < 3 participants — should be cancelled.
+ */
+export async function getLockedUnderparticipatedRounds(): Promise<DbRound[]> {
+  return query<DbRound>(
+    `SELECT * FROM rounds WHERE status = 'Open' AND lock_time <= NOW() AND participant_count < 3`
+  );
+}
+
+/**
  * Settle a round: get oracle price → call contract → update DB.
  */
 export async function settleRound(round: DbRound): Promise<void> {

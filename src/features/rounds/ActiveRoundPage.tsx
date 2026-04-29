@@ -18,18 +18,21 @@ import { useToast } from '../../lib/useToast';
 import { api } from '../../services/api';
 import styles from './ActiveRoundPage.module.css';
 
-type Phase = 'open' | 'locked' | 'ended' | 'settled' | 'cancelled';
+type Phase = 'open' | 'waiting' | 'locked' | 'ended' | 'settled' | 'cancelled';
 
 const POOL_MULTIPLIER = 4.25;
 
-function getPhase(round: RoundData | null, now: number): Phase {
+function getPhase(round: RoundData | null, now: number, participantCount: number): Phase {
   if (!round) return 'open';
   const lockTime = Number(round.lock_time);
   const endTime = Number(round.end_time);
   if (round.status === 'Settled') return 'settled';
   if (round.status === 'Cancelled') return 'cancelled';
   if (now >= endTime) return 'ended';
-  if (now >= lockTime) return 'locked';
+  if (now >= lockTime) {
+    // After lock_time: if < 3 participants → waiting (will be cancelled), else locked
+    return participantCount < 3 ? 'waiting' : 'locked';
+  }
   return 'open';
 }
 
@@ -149,6 +152,7 @@ export const ActiveRoundPage = () => {
         setRoundId(id);
         if (id > 0) {
           const r = await getRound(id);
+          console.log('📋 Round from contract:', { id, status: r.status, lock_time: Number(r.lock_time), end_time: Number(r.end_time), now: Math.floor(Date.now()/1000) });
           setRound(r);
           const cnt = await getParticipantCount(id);
           setParticipantCount(cnt);
@@ -182,11 +186,11 @@ export const ActiveRoundPage = () => {
   }, [loadRound]);
 
   // ── Derived ───────────────────────────────────────────────────────────────
-  const phase = getPhase(round, now);
+  const phase = getPhase(round, now, participantCount);
   const timeToLock = round ? Math.max(0, Number(round.lock_time) - now) : 0;
   const timeToEnd = round ? Math.max(0, Number(round.end_time) - now) : 0;
   const countdown = phase === 'open' ? timeToLock : timeToEnd;
-  const countdownLabel = phase === 'open' ? 'Betting closes in' : phase === 'locked' ? 'Round ends in' : 'Round ended';
+  const countdownLabel = phase === 'open' ? 'Betting closes in' : phase === 'locked' ? 'Round ends in' : phase === 'waiting' ? 'Cancelling in' : 'Round ended';
 
   const stakeNum = parseFloat(stake) || 0;
   const predNum = parseFloat(prediction) || 0;
@@ -266,7 +270,7 @@ export const ActiveRoundPage = () => {
         predictedPriceMicroUsd: String(Math.round(predNum * 1_000_000)),
         stakeAmountStroops: String(Math.floor(stakeNum * 10_000_000)),
         txHash,
-      }).catch(() => {/* non-critical */});
+      }).catch(() => {});
       showToast('success', 'Bet placed successfully!');
       setPrediction('');
       setStake('');
@@ -312,6 +316,7 @@ export const ActiveRoundPage = () => {
             <div className={cn(
               'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
               phase === 'locked' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
+              phase === 'waiting' ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' :
               phase === 'settled' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
               phase === 'cancelled' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
               phase === 'ended' ? 'bg-gray-500/10 border-gray-500/30 text-gray-400' :
@@ -320,11 +325,12 @@ export const ActiveRoundPage = () => {
               <span className={cn(
                 'w-1.5 h-1.5 rounded-full',
                 phase === 'locked' ? 'bg-yellow-400' :
+                phase === 'waiting' ? 'bg-orange-400 animate-pulse' :
                 phase === 'settled' ? 'bg-blue-400' :
                 phase === 'cancelled' || phase === 'ended' ? 'bg-gray-400' :
                 'bg-emerald-400 animate-pulse'
               )} />
-              {phase === 'locked' ? 'LOCKED' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : phase === 'ended' ? 'ENDED' : 'LIVE'}
+              {phase === 'locked' ? 'LOCKED' : phase === 'waiting' ? 'WAITING' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : phase === 'ended' ? 'ENDED' : 'LIVE'}
             </div>
           )}
         </div>
@@ -646,6 +652,12 @@ export const ActiveRoundPage = () => {
                     <p>Round ends in <span className="text-white font-mono">{formatCountdown(timeToEnd)}</span></p>
                   </>
                 )}
+                {phase === 'waiting' && (
+                  <>
+                    <p className="text-orange-400 font-bold">⏳ Waiting for Participants</p>
+                    <p className="text-xs">Only {participantCount}/3 joined. Round will be cancelled and stakes refunded in <span className="text-white font-mono">{formatCountdown(timeToEnd)}</span></p>
+                  </>
+                )}
                 {phase === 'ended' && <p>⏳ Round ended. Awaiting oracle settlement...</p>}
                 {phase === 'settled' && settlePrice && (
                   <>
@@ -665,7 +677,7 @@ export const ActiveRoundPage = () => {
                 {phase === 'cancelled' && (
                   <>
                     <p className="text-red-400 font-bold">❌ Round Cancelled</p>
-                    <p className="text-xs">Less than 2 participants. Stakes refunded.</p>
+                    <p className="text-xs">Less than 3 participants. Stakes refunded.</p>
                   </>
                 )}
               </div>

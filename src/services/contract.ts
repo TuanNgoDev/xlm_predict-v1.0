@@ -8,7 +8,7 @@ import {
   Networks,
 } from '@stellar/stellar-sdk';
 
-export const CONTRACT_ID = 'CABGLSMDD3IEKP6NS6O5GFI7KEQIGFPCRSODWRWE6Q7I7FC2FS652R2Z';
+export const CONTRACT_ID = 'CBEFCWFEW7VLK2LAU7PLOKRB7QIGXMQS4YJDYNUZHEAIMH7SNJ3CZTGU';
 export const RPC_URL = 'https://soroban-testnet.stellar.org';
 export const NETWORK_PASSPHRASE = Networks.TESTNET;
 export const STROOPS = 10_000_000;

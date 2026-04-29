@@ -89,14 +89,15 @@ impl PredictionPool {
         env.events().publish((soroban_sdk::symbol_short!("bet"), round_id, bettor), (predicted_price, stake_amount));
     }
 
-    // ── Cancel round — called if < 3 participants after end_time ────────────
+    // ── Cancel round — called if < 3 participants after lock_time ────────────
     pub fn cancel_round(env: Env, round_id: u32) {
         let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         admin.require_auth();
 
         let mut round: Round = env.storage().persistent().get(&DataKey::Round(round_id)).unwrap_or_else(|| panic_with_error!(&env, Error::RoundNotFound));
 
-        if env.ledger().timestamp() < round.end_time { panic_with_error!(&env, Error::TooEarly); }
+        // Allow cancel after lock_time if not enough participants
+        if env.ledger().timestamp() < round.lock_time { panic_with_error!(&env, Error::TooEarly); }
         if round.status != RoundStatus::Open { panic_with_error!(&env, Error::AlreadySettled); }
 
         let count: u32 = env.storage().persistent().get(&DataKey::ParticipantCount(round_id)).unwrap_or(0);

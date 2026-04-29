@@ -27,6 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "typescript": "^5",
     "vite": "^5.4.21"

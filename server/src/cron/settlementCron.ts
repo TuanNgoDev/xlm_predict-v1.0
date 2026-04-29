@@ -40,13 +40,29 @@ async function runSettlementTick(): Promise<void> {
   let errors = 0;
 
   try {
-    const rounds = await settlementService.getExpiredOpenRounds();
-    logger.info({ count: rounds.length }, 'Settlement tick started');
-
-    for (const round of rounds) {
-      const before = { settled, cancelled };
+    // 1. Cancel rounds that passed lock_time with < 3 participants
+    const underparticipated = await settlementService.getLockedUnderparticipatedRounds();
+    for (const round of underparticipated) {
       try {
-        if (round.participant_count >= 2) {
+        await settlementService.cancelRound(round);
+        cancelled++;
+        retryCount.delete(round.contract_round_id);
+        logger.info({ roundId: round.contract_round_id }, 'Round cancelled — not enough participants at lock_time');
+      } catch (err) {
+        errors++;
+        const attempts = (retryCount.get(round.contract_round_id) ?? 0) + 1;
+        retryCount.set(round.contract_round_id, attempts);
+        logger.error({ roundId: round.contract_round_id, attempt: attempts, err }, 'Failed to cancel underparticipated round');
+      }
+    }
+
+    // 2. Settle or cancel rounds that passed end_time
+    const expired = await settlementService.getExpiredOpenRounds();
+    logger.info({ count: expired.length }, 'Settlement tick started');
+
+    for (const round of expired) {
+      try {
+        if (round.participant_count >= 3) {
           await settlementService.settleRound(round);
           settled++;
         } else {
@@ -58,25 +74,14 @@ async function runSettlementTick(): Promise<void> {
         errors++;
         const attempts = (retryCount.get(round.contract_round_id) ?? 0) + 1;
         retryCount.set(round.contract_round_id, attempts);
-        logger.error(
-          { roundId: round.contract_round_id, attempt: attempts, err },
-          'Failed to process round'
-        );
+        logger.error({ roundId: round.contract_round_id, attempt: attempts, err }, 'Failed to process round');
       }
     }
   } catch (err) {
     logger.error({ err }, 'Settlement tick failed to fetch rounds');
   }
 
-  logger.info(
-    {
-      durationMs: Date.now() - start,
-      settled,
-      cancelled,
-      errors,
-    },
-    'Settlement tick completed'
-  );
+  logger.info({ durationMs: Date.now() - start, settled, cancelled, errors }, 'Settlement tick completed');
 }
 
 async function runPriceFeedTick(): Promise<void> {
