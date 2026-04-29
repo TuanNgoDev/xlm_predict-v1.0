@@ -1,15 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, PlusCircle, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Clock, PlusCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useToast } from '../../lib/useToast';
 import { api, ApiPosition } from '../../services/api';
 import { useWallet } from '../../lib/walletContext';
+import { claimReward } from '../../services/contract';
 import styles from './PositionsPage.module.css';
 
-const PositionCard = ({ position }: { position: ApiPosition }) => {
+interface PositionCardProps {
+  position: ApiPosition;
+  onClaim: (roundId: number) => Promise<void>;
+  claiming: boolean;
+}
+
+const PositionCard = ({ position, onClaim, claiming }: PositionCardProps) => {
   const outcomeStyle =
     position.outcome === 'Won' ? styles.won :
-    position.outcome === 'Lost' ? styles.lost : styles.pending;
+    position.outcome === 'Lost' ? styles.lost :
+    position.outcome === 'Refunded' ? styles.pending :
+    styles.pending;
+
+  const outcomeLabel =
+    position.outcome === 'Refunded' ? '↩ Refunded' : position.outcome;
 
   return (
     <div className={cn('glass-card', styles.positionCard, outcomeStyle)}>
@@ -18,7 +30,7 @@ const PositionCard = ({ position }: { position: ApiPosition }) => {
           <span className={styles.roundId}>Round #{position.roundId}</span>
           <h3 className={styles.pairName}>{position.pair}</h3>
         </div>
-        <span className={cn(styles.pnlBadge, outcomeStyle)}>{position.outcome}</span>
+        <span className={cn(styles.pnlBadge, outcomeStyle)}>{outcomeLabel}</span>
       </div>
 
       <div className={styles.cardGrid}>
@@ -32,24 +44,57 @@ const PositionCard = ({ position }: { position: ApiPosition }) => {
         </div>
       </div>
 
+      {/* Won — show reward + claim button */}
       {position.outcome === 'Won' && position.rewardXlm > 0 && (
         <div className={cn(styles.resultNotification, styles.wonArea)}>
           <div className={styles.resultInfo}>
-            <p className={styles.resultLabel}>You won</p>
+            <p className={styles.resultLabel}>
+              {position.rank === 1 ? '🥇 1st Place' : '🥈 2nd Place'}
+            </p>
             <p className={styles.resultValue}>{position.rewardXlm.toFixed(2)} XLM</p>
           </div>
-          {!position.claimed && (
-            <span className="text-xs text-emerald-400 font-bold">Claimable</span>
+          {position.claimed ? (
+            <span className={cn(styles.claimedBadge, 'flex items-center gap-1 text-xs text-gray-400')}>
+              <CheckCircle size={12} /> Claimed
+            </span>
+          ) : (
+            <button
+              className={styles.claimButton}
+              onClick={() => onClaim(position.roundId)}
+              disabled={claiming}
+            >
+              {claiming ? (
+                <span className="flex items-center gap-1">
+                  <RefreshCw size={12} className="animate-spin" /> Claiming...
+                </span>
+              ) : (
+                'Claim'
+              )}
+            </button>
           )}
         </div>
       )}
 
+      {/* Lost — show settle price */}
       {position.outcome === 'Lost' && position.settlePrice && (
         <div className={styles.expiryNote}>
           Settled at <span className={styles.expiryPrice}>${position.settlePrice.toFixed(6)}</span>
+          {position.rank !== null && (
+            <span className="ml-2 text-gray-500">· Rank #{position.rank}</span>
+          )}
         </div>
       )}
 
+      {/* Refunded — round was cancelled (< 3 participants), stake returned on-chain */}
+      {position.outcome === 'Refunded' && (
+        <div className={styles.expiryNote}>
+          Round cancelled — stake of{' '}
+          <span className={styles.expiryPrice}>{position.stakeAmountXlm.toFixed(2)} XLM</span>{' '}
+          was refunded to your wallet automatically.
+        </div>
+      )}
+
+      {/* Pending */}
       {position.outcome === 'Pending' && (
         <div className={styles.timerArea}>
           <Clock className={styles.timerIcon} />
@@ -61,23 +106,54 @@ const PositionCard = ({ position }: { position: ApiPosition }) => {
 };
 
 export const PositionsPage = () => {
-  const { address } = useWallet();
+  const { address, signTx } = useWallet();
   const { showToast, ToastUI } = useToast();
   const [positions, setPositions] = useState<ApiPosition[]>([]);
   const [loading, setLoading] = useState(false);
+  const [claimingRound, setClaimingRound] = useState<number | null>(null);
 
-  useEffect(() => {
+  const loadPositions = useCallback(() => {
     if (!address) return;
     setLoading(true);
     api.bets.getPositions(address)
       .then(setPositions)
-      .catch(e => showToast('error', 'Failed to load positions'))
+      .catch(() => showToast('error', 'Failed to load positions'))
       .finally(() => setLoading(false));
   }, [address]);
 
+  useEffect(() => {
+    loadPositions();
+  }, [loadPositions]);
+
+  const handleClaim = useCallback(async (roundId: number) => {
+    if (!address) return;
+    setClaimingRound(roundId);
+    try {
+      // 1. Build + sign + submit claim_reward on-chain
+      const txHash = await claimReward(address, roundId, signTx);
+
+      // 2. Record claim in backend DB (idempotent)
+      await api.rewards.recordClaim({ address, roundId, txHash });
+
+      showToast('success', `Reward claimed! Tx: ${txHash.slice(0, 8)}…`);
+
+      // 3. Refresh positions so card flips to "Claimed"
+      loadPositions();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Claim failed';
+      showToast('error', msg);
+    } finally {
+      setClaimingRound(null);
+    }
+  }, [address, signTx, loadPositions]);
+
   const totalWins = positions.filter(p => p.outcome === 'Won').length;
   const winRate = positions.length > 0 ? ((totalWins / positions.length) * 100).toFixed(1) : '0';
-  const netEarnings = positions.reduce((s, p) => s + p.rewardXlm - p.stakeAmountXlm, 0);
+  const netEarnings = positions.reduce((s, p) => {
+    if (p.outcome === 'Won') return s + p.rewardXlm - p.stakeAmountXlm;
+    if (p.outcome === 'Lost') return s - p.stakeAmountXlm;
+    return s; // Pending / Refunded don't count yet
+  }, 0);
 
   return (
     <div className={styles.container}>
@@ -110,7 +186,12 @@ export const PositionsPage = () => {
       ) : (
         <div className={styles.positionsGrid}>
           {positions.map((p, i) => (
-            <PositionCard key={`${p.roundId}-${i}`} position={p} />
+            <PositionCard
+              key={`${p.roundId}-${i}`}
+              position={p}
+              onClaim={handleClaim}
+              claiming={claimingRound === p.roundId}
+            />
           ))}
           <div className={cn('glass-card', styles.newPredictionCard)}>
             <div className={styles.plusIconArea}>

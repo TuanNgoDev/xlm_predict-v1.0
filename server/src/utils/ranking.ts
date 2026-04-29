@@ -1,7 +1,7 @@
-// Mirrors smart contract reward distribution logic
-// REWARD_PCTS = [50, 30, 20] for top-3; [60, 40] for 2 participants
-const REWARD_PCTS_3 = [50n, 30n, 20n];
-const REWARD_PCTS_2 = [60n, 40n]; // fallback, not used with min 3 rule
+// Mirrors smart contract reward distribution logic exactly:
+// Top 1: stake1 + 65% of (total_pool - stake1 - stake2)
+// Top 2: stake2 + 35% of (total_pool - stake1 - stake2)
+// Others: 0 (lose stake)
 const FEE_BPS_DEFAULT = 0n; // No fee
 const BPS_DENOM = 10_000n;
 
@@ -59,36 +59,44 @@ export function rankBets(
 }
 
 /**
- * Calculate reward amounts mirroring the smart contract logic.
- * Fee is deducted first, then distributed to top-3 (or top-2).
- * Returns only entries that receive a reward (rank 1–3).
+ * Calculate reward amounts mirroring the smart contract logic exactly.
+ *
+ * Contract logic (settle_round):
+ *   prize_pool = total_pool - stake1 - stake2
+ *   top1 reward = stake1 + (prize_pool * 65) / 100
+ *   top2 reward = stake2 + (prize_pool * 35) / 100
+ *   others      = 0 (lose stake)
+ *
+ * Requires at least 3 participants (enforced by contract MIN_PARTICIPANTS).
  */
 export function calculateRewards(
   rankedBets: Array<{ rank: number; bettorAddress: string; stakeAmountStroops: bigint }>,
   totalPoolStroops: bigint,
-  feeBps: bigint = FEE_BPS_DEFAULT
+  _feeBps: bigint = FEE_BPS_DEFAULT
 ): RewardEntry[] {
-  const fee = (totalPoolStroops * feeBps) / BPS_DENOM;
-  const prizePool = totalPoolStroops - fee;
-
   const n = rankedBets.length;
-  if (n === 0) return [];
+  if (n < 2) return [];
 
-  const pcts = n >= 3 ? REWARD_PCTS_3 : REWARD_PCTS_2;
-  const topN = Math.min(n, pcts.length);
+  const top1 = rankedBets.find((b) => b.rank === 1);
+  const top2 = rankedBets.find((b) => b.rank === 2);
+  if (!top1 || !top2) return [];
 
-  const rewards: RewardEntry[] = [];
-  for (let i = 0; i < topN; i++) {
-    const bet = rankedBets.find((b) => b.rank === i + 1);
-    if (!bet) continue;
-    rewards.push({
-      rank: i + 1,
-      bettorAddress: bet.bettorAddress,
-      rewardStroops: (prizePool * pcts[i]) / 100n,
-    });
-  }
+  const stake1 = top1.stakeAmountStroops;
+  const stake2 = top2.stakeAmountStroops;
+  const prizePool = totalPoolStroops - stake1 - stake2;
 
-  return rewards;
+  return [
+    {
+      rank: 1,
+      bettorAddress: top1.bettorAddress,
+      rewardStroops: stake1 + (prizePool * 65n) / 100n,
+    },
+    {
+      rank: 2,
+      bettorAddress: top2.bettorAddress,
+      rewardStroops: stake2 + (prizePool * 35n) / 100n,
+    },
+  ];
 }
 
 /**

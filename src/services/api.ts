@@ -43,7 +43,7 @@ export interface ApiPosition {
   predictedPriceUsd: number;
   stakeAmountXlm: number;
   status: string;
-  outcome: 'Won' | 'Lost' | 'Pending';
+  outcome: 'Won' | 'Lost' | 'Pending' | 'Refunded';
   rewardXlm: number;
   rank: number | null;
   settlePrice: number | null;

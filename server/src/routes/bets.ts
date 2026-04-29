@@ -122,11 +122,13 @@ router.get('/user/:address/positions', async (req: Request, res: Response, next:
     );
 
     const positions = rows.map((r) => {
-      let outcome: 'Won' | 'Lost' | 'Pending' = 'Pending';
+      let outcome: 'Won' | 'Lost' | 'Pending' | 'Refunded' = 'Pending';
       if (r.round_status === 'Settled') {
-        outcome = r.rank !== null && r.rank <= 3 ? 'Won' : 'Lost';
+        // Only top 2 win; rank 3+ lose their stake
+        outcome = r.rank !== null && r.rank <= 2 ? 'Won' : 'Lost';
       } else if (r.round_status === 'Cancelled') {
-        outcome = 'Lost';
+        // < 3 participants — contract already refunded stake on-chain
+        outcome = 'Refunded';
       }
 
       return {

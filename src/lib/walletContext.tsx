@@ -12,6 +12,7 @@ interface WalletContextType {
   connect: (type: WalletType) => Promise<void>;
   disconnect: () => void;
   xlmBalance: number;
+  refreshBalance: () => void;
   isModalOpen: boolean;
   setModalOpen: (open: boolean) => void;
   signTx: (xdr: string) => Promise<string>;
@@ -24,6 +25,7 @@ const WalletContext = createContext<WalletContextType>({
   connect: async () => {},
   disconnect: () => {},
   xlmBalance: 0,
+  refreshBalance: () => {},
   isModalOpen: false,
   setModalOpen: () => {},
   signTx: async () => { throw new Error('Wallet not connected'); },
@@ -53,16 +55,34 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Fetch XLM balance when address changes
+  // Fetch XLM balance when address changes, then poll every 30s for updates
   useEffect(() => {
     if (!address) { setXlmBalance(0); return; }
+
+    const fetchBalance = () => {
+      fetch(`https://horizon-testnet.stellar.org/accounts/${address}`)
+        .then(r => r.json())
+        .then((data: { balances?: Array<{ asset_type: string; balance: string }> }) => {
+          const native = data.balances?.find(b => b.asset_type === 'native');
+          setXlmBalance(parseFloat(native?.balance || '0'));
+        })
+        .catch(() => {});
+    };
+
+    fetchBalance();
+    const interval = setInterval(fetchBalance, 30_000);
+    return () => clearInterval(interval);
+  }, [address]);
+
+  const refreshBalance = useCallback(() => {
+    if (!address) return;
     fetch(`https://horizon-testnet.stellar.org/accounts/${address}`)
       .then(r => r.json())
       .then((data: { balances?: Array<{ asset_type: string; balance: string }> }) => {
         const native = data.balances?.find(b => b.asset_type === 'native');
         setXlmBalance(parseFloat(native?.balance || '0'));
       })
-      .catch(() => setXlmBalance(0));
+      .catch(() => {});
   }, [address]);
 
   const connect = useCallback(async (type: WalletType) => {
@@ -101,7 +121,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <WalletContext.Provider value={{ 
-      address, walletType, connecting, connect, disconnect, xlmBalance,
+      address, walletType, connecting, connect, disconnect, xlmBalance, refreshBalance,
       isModalOpen, setModalOpen, signTx,
     }}>
       {children}

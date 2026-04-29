@@ -47,7 +47,7 @@ function formatCountdown(secs: number): string {
 export const ActiveRoundPage = () => {
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  const { address: walletAddress, setModalOpen, signTx } = useWallet();
+  const { address: walletAddress, setModalOpen, signTx, refreshBalance } = useWallet();
   const { showToast, ToastUI } = useToast();
 
   // Round state
@@ -61,6 +61,7 @@ export const ActiveRoundPage = () => {
   const [prediction, setPrediction] = useState('');
   const [stake, setStake] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(''); // 2-step progress for create round
 
   // Create round form
   const [createDuration, setCreateDuration] = useState('60'); // minutes
@@ -189,8 +190,8 @@ export const ActiveRoundPage = () => {
   const phase = getPhase(round, now, participantCount);
   const timeToLock = round ? Math.max(0, Number(round.lock_time) - now) : 0;
   const timeToEnd = round ? Math.max(0, Number(round.end_time) - now) : 0;
-  const countdown = phase === 'open' ? timeToLock : timeToEnd;
-  const countdownLabel = phase === 'open' ? 'Betting closes in' : phase === 'locked' ? 'Round ends in' : phase === 'waiting' ? 'Cancelling in' : 'Round ended';
+  const countdown = phase === 'open' ? timeToLock : phase === 'locked' ? timeToEnd : 0;
+  const countdownLabel = phase === 'open' ? 'Betting closes in' : phase === 'locked' ? 'Round ends in' : phase === 'waiting' ? 'Cancelling...' : 'Round ended';
 
   const stakeNum = parseFloat(stake) || 0;
   const predNum = parseFloat(prediction) || 0;
@@ -219,6 +220,7 @@ export const ActiveRoundPage = () => {
       const endTime = Math.floor(Date.now() / 1000) + durationSecs;
 
       // Step 1: create round (min stake hardcoded to 100 XLM)
+      setLoadingStep('Step 1/2: Creating round — sign in wallet…');
       const newId = await createRound(walletAddress, endTime, MIN_STAKE, signTx);
       const newRoundId = parseInt(newId);
 
@@ -234,6 +236,7 @@ export const ActiveRoundPage = () => {
       }).catch(() => {});
 
       // Step 2: place bet in the same round
+      setLoadingStep('Step 2/2: Placing bet — sign in wallet…');
       const txHash = await placeBet(walletAddress, newRoundId, predNum, stakeNum, signTx);
       await api.bets.record({
         roundId: newRoundId,
@@ -246,11 +249,13 @@ export const ActiveRoundPage = () => {
       showToast('success', `Round #${newRoundId} created & bet placed!`);
       setPrediction('');
       setStake('');
+      refreshBalance();
       await loadRound();
     } catch (e) {
       showToast('error', String(e));
     } finally {
       setLoading(false);
+      setLoadingStep('');
     }
   };
 
@@ -274,6 +279,7 @@ export const ActiveRoundPage = () => {
       showToast('success', 'Bet placed successfully!');
       setPrediction('');
       setStake('');
+      refreshBalance();
       await loadRound();
     } catch (e) {
       showToast('error', String(e));
@@ -290,6 +296,7 @@ export const ActiveRoundPage = () => {
       await api.rewards.recordClaim({ address: walletAddress, roundId, txHash }).catch(() => {});
       showToast('success', `Claimed ${myReward.toFixed(2)} XLM!`);
       setMyReward(0);
+      refreshBalance();
     } catch (e) {
       showToast('error', String(e));
     } finally {
@@ -355,8 +362,8 @@ export const ActiveRoundPage = () => {
               <div className={styles.statsRow}>
                 <div className={styles.statItem}>
                   <span className={styles.statLabel}>{countdownLabel}</span>
-                  <span className={cn(styles.statValue, styles.timer, countdown < 300 && styles.timerUrgent)}>
-                    {phase === 'ended' || phase === 'settled' || phase === 'cancelled'
+                  <span className={cn(styles.statValue, styles.timer, countdown < 300 && countdown > 0 && styles.timerUrgent)}>
+                    {phase === 'ended' || phase === 'settled' || phase === 'cancelled' || phase === 'waiting'
                       ? '—'
                       : formatCountdown(countdown)}
                   </span>
@@ -554,7 +561,7 @@ export const ActiveRoundPage = () => {
                   disabled={loading || !walletAddress || !prediction || stakeNum < MIN_STAKE}
                   className={cn(styles.submitButton, (loading || !walletAddress || !prediction || stakeNum < MIN_STAKE) && styles.submitDisabled)}
                 >
-                  {loading ? 'Creating...' : !walletAddress ? 'Connect Wallet' : 'Create Round & Predict'}
+                  {loading ? (loadingStep || 'Creating...') : !walletAddress ? 'Connect Wallet' : 'Create Round & Predict'}
                 </button>
 
                 <div className={styles.securityNote}>
@@ -655,7 +662,7 @@ export const ActiveRoundPage = () => {
                 {phase === 'waiting' && (
                   <>
                     <p className="text-orange-400 font-bold">⏳ Waiting for Participants</p>
-                    <p className="text-xs">Only {participantCount}/3 joined. Round will be cancelled and stakes refunded in <span className="text-white font-mono">{formatCountdown(timeToEnd)}</span></p>
+                    <p className="text-xs">Only {participantCount}/3 joined. Round is being cancelled — stakes will be refunded to your wallet automatically.</p>
                   </>
                 )}
                 {phase === 'ended' && <p>⏳ Round ended. Awaiting oracle settlement...</p>}
