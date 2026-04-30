@@ -62,7 +62,7 @@ async function runSettlementTick(): Promise<void> {
 
     for (const round of expired) {
       try {
-        if (round.participant_count >= 3) {
+        if (round.participant_count >= 3) {  // matches contract MIN_PARTICIPANTS = 3
           await settlementService.settleRound(round);
           settled++;
         } else {

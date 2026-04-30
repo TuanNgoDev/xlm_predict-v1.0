@@ -1,4 +1,4 @@
-import { query, withTransaction } from '../db/client.js';
+import { query, queryOne, withTransaction } from '../db/client.js';
 import * as contractService from './contractService.js';
 import * as oracle from './oracleService.js';
 import { rankBets, calculateRewards } from '../utils/ranking.js';
@@ -49,7 +49,9 @@ export async function getLockedUnderparticipatedRounds(): Promise<DbRound[]> {
 }
 
 /**
- * Settle a round: get oracle price → call contract → update DB.
+ * Settle a round: get oracle price closest to end_time → call contract → update DB.
+ * Uses the price record nearest to round.end_time from DB to avoid timing drift
+ * between when the round actually ended and when the cron job runs.
  */
 export async function settleRound(round: DbRound): Promise<void> {
   // Idempotency check
@@ -62,8 +64,39 @@ export async function settleRound(round: DbRound): Promise<void> {
     return;
   }
 
-  const priceRecord = await oracle.getCurrentPrice();
-  const actualPriceMicroUsd = priceRecord.priceMicroUsd;
+  // Use price closest to end_time from DB — avoids drift between end_time and cron execution time.
+  // Falls back to live price if no DB record exists near end_time.
+  let actualPriceMicroUsd: bigint;
+  try {
+    const closestRow = await queryOne<{ price_micro_usd: string }>(
+      `SELECT price_micro_usd FROM price_feed
+       ORDER BY ABS(EXTRACT(EPOCH FROM (recorded_at - $1::timestamptz)))
+       LIMIT 1`,
+      [round.end_time]
+    );
+    if (closestRow) {
+      actualPriceMicroUsd = BigInt(closestRow.price_micro_usd);
+      logger.info(
+        { roundId: round.contract_round_id, price: actualPriceMicroUsd.toString(), source: 'db_closest_to_end_time' },
+        'Using DB price closest to end_time'
+      );
+    } else {
+      // No price in DB at all — fall back to live fetch
+      const priceRecord = await oracle.getCurrentPrice();
+      actualPriceMicroUsd = priceRecord.priceMicroUsd;
+      logger.warn(
+        { roundId: round.contract_round_id, price: actualPriceMicroUsd.toString(), source: 'live_fallback' },
+        'No DB price found, using live oracle price'
+      );
+    }
+  } catch {
+    const priceRecord = await oracle.getCurrentPrice();
+    actualPriceMicroUsd = priceRecord.priceMicroUsd;
+    logger.warn(
+      { roundId: round.contract_round_id, price: actualPriceMicroUsd.toString(), source: 'live_fallback' },
+      'DB price query failed, using live oracle price'
+    );
+  }
 
   logger.info(
     { roundId: round.contract_round_id, price: actualPriceMicroUsd.toString() },
