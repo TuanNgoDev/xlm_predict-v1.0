@@ -50,6 +50,15 @@ Testnet accounts used for demo and testing:
 
 **Feedback Form (Google Sheet):** [Open Feedback Sheet](https://docs.google.com/spreadsheets/d/1Rb7RLz8RQUfYdOjPLGkgWdFoxulSnC7FWrh6hDGaCXo/edit?usp=sharing)
 
+### Future Improvements & Evolution
+
+Based on collected user feedback, we are actively improving and evolving the project. In the next phase, we plan to focus on:
+
+- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from ttgaming1246@gmail.com - see commit bde41abc672320563f069efcc9b9b3ab1659cb7f).
+- **Real-time Price Updates:** Implement WebSocket connections for live XLM/USD price streaming to reduce latency and improve user experience during active rounds.
+- **Advanced Analytics Dashboard:** Build comprehensive statistics and historical data visualization for users to analyze their prediction patterns and performance trends.
+- **Multi-Asset Support:** Expand prediction markets to include other Stellar assets beyond XLM, allowing users to predict prices for various token pairs.
+
 ---
 
 ## Architecture
@@ -350,14 +359,6 @@ npm run test:coverage
 - **Functions:** `initialize` · `create_round` · `place_bet` · `settle_round` · `cancel_round` · `claim_reward`
 
 ---
-
-## Future Improvements & Evolution
-
-Based on collected user feedback, we are actively improving and evolving the project. In the next phase, we plan to focus on:
-
-- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from ttgaming1246@gmail.com - see commit bde41abc672320563f069efcc9b9b3ab1659cb7f).
-- **Improved Performance:** Optimize database queries for trade processing and OHLCV chart data loading.
-- **Advanced Trading Tools:** Build out more robust charting and trading interface elements directly addressing trader requests.
 
 ---
 
