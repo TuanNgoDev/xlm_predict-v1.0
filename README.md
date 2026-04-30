@@ -54,7 +54,7 @@ Testnet accounts used for demo and testing:
 
 Based on collected user feedback, we are actively improving and evolving the project. In the next phase, we plan to focus on:
 
-- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from ttgaming1246@gmail.com - see commit bde41abc672320563f069efcc9b9b3ab1659cb7f).
+- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from cucnguyen20121968@gmail.com - see commit [bde41ab](https://github.com/TuanNgoDev/XLMPREDICT/commit/bde41ab)).
 - **Real-time Price Updates:** Implement WebSocket connections for live XLM/USD price streaming to reduce latency and improve user experience during active rounds.
 - **Advanced Analytics Dashboard:** Build comprehensive statistics and historical data visualization for users to analyze their prediction patterns and performance trends.
 - **Multi-Asset Support:** Expand prediction markets to include other Stellar assets beyond XLM, allowing users to predict prices for various token pairs.
