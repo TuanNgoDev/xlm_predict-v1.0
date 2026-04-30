@@ -24,14 +24,7 @@ Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — 
 
 ## Demo Video
 
-[Watch demo videos on Google Drive](#)
-
-| Action | Link |
-|--------|------|
-| Connect ví Freighter | [_link_](#) |
-| Đặt cược (Bet) | [_link_](#) |
-| Settle round | [_link_](#) |
-| Claim phần thưởng | [_link_](#) |
+[Watch demo videos on Google Drive](https://drive.google.com/drive/folders/1GpEGhH7Rpmhcikr65NjJjwjufwjYALHV)
 
 ---
 
@@ -41,11 +34,13 @@ Testnet accounts used for demo and testing:
 
 | # | Address |
 |---|---------|
-| 1 | `GXXXX...` |
-| 2 | `GXXXX...` |
-| 3 | `GXXXX...` |
-| 4 | `GXXXX...` |
-| 5 | `GXXXX...` |
+| 1 | `GAEU3CLX3AZNNHB6ICCNMUN5VDMVRKJBP4CPQQGLRAXWKAFVBXAGLX32` |
+| 2 | `GDQAK5F3RXAHGNUZZGODDTUL4D2OFBQG26LOZF36URKXGDIQQEVBBA4L` |
+| 3 | `GCW74EQE6JLW446BLSOFWHAUDTZFBTZLLLBAA7JTRSXLBBWGXR4V4YD5` |
+| 4 | `GAVRZLSQR7CEHJCFSN6ENPFRFY3VVICZV2KZWXCIDNFXSE5BUIOLBFCB` |
+| 5 | `GBXANKIZ2P4JMKOY5LXSDNFX2VK5I2VKYFJWUNAPQA4JFO3V4PFZBCZT` |
+| 6 | `GDLYHOUXV2IGDWK4P7C56JSPMOYU7ZZVQIK3HVQS5WLITWQIXVXHWOJC` |
+| 7 | `GCZ2IR57HR7JSKNA5ILVGBWJSUFUHPJHW35RXDQ7HTDBZ2QHURULFP63` |
 
 > Lấy XLM testnet miễn phí tại [Stellar Friendbot](https://friendbot.stellar.org)
 
@@ -53,7 +48,7 @@ Testnet accounts used for demo and testing:
 
 ## Feedback
 
-**Feedback Form (Google Sheet):** [Open Feedback Sheet](#)
+**Feedback Form (Google Sheet):** [Open Feedback Sheet](https://docs.google.com/spreadsheets/d/1Rb7RLz8RQUfYdOjPLGkgWdFoxulSnC7FWrh6hDGaCXo/edit?usp=sharing)
 
 ---
 
