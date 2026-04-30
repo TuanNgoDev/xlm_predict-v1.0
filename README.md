@@ -351,6 +351,16 @@ npm run test:coverage
 
 ---
 
+## Future Improvements & Evolution
+
+Based on collected user feedback, we are actively improving and evolving the project. In the next phase, we plan to focus on:
+
+- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from ttgaming1246@gmail.com - see commit bde41abc672320563f069efcc9b9b3ab1659cb7f).
+- **Improved Performance:** Optimize database queries for trade processing and OHLCV chart data loading.
+- **Advanced Trading Tools:** Build out more robust charting and trading interface elements directly addressing trader requests.
+
+---
+
 ## License
 
 MIT © 2025 XLMPredict Team
