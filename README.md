@@ -16,7 +16,7 @@ Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — 
 
 ---
 
-**Live Demo:** [_link_](#)
+**Live Demo:** [https://xlmpredict.up.railway.app/](https://xlmpredict.up.railway.app/)
 
 </div>
 
