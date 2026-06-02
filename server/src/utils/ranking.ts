@@ -84,17 +84,19 @@ export function calculateRewards(
   const stake1 = top1.stakeAmountStroops;
   const stake2 = top2.stakeAmountStroops;
   const prizePool = totalPoolStroops - stake1 - stake2;
+  const reward2 = stake2 + (prizePool * 35n) / 100n;
+  const reward1 = stake1 + prizePool - (reward2 - stake2);
 
   return [
     {
       rank: 1,
       bettorAddress: top1.bettorAddress,
-      rewardStroops: stake1 + (prizePool * 65n) / 100n,
+      rewardStroops: reward1,
     },
     {
       rank: 2,
       bettorAddress: top2.bettorAddress,
-      rewardStroops: stake2 + (prizePool * 35n) / 100n,
+      rewardStroops: reward2,
     },
   ];
 }

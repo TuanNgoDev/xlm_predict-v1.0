@@ -69,34 +69,31 @@ describe('calculateRewards', () => {
     stakeAmountStroops: 100_000_000n,
   });
 
-  it('distributes 50/30/20 for 3 participants', () => {
+  it('distributes 65/35 of prize pool after stakes are deducted for 3 participants', () => {
     const ranked = [makeRanked(1, addr(1)), makeRanked(2, addr(2)), makeRanked(3, addr(3))];
     const rewards = calculateRewards(ranked, pool, fee);
-    const prizePool = 950_000_000n;
-    expect(rewards[0].rewardStroops).toBe((prizePool * 50n) / 100n);
-    expect(rewards[1].rewardStroops).toBe((prizePool * 30n) / 100n);
-    expect(rewards[2].rewardStroops).toBe((prizePool * 20n) / 100n);
+    expect(rewards.length).toBe(2);
+    expect(rewards[0].rewardStroops).toBe(100_000_000n + (800_000_000n * 65n) / 100n);
+    expect(rewards[1].rewardStroops).toBe(100_000_000n + (800_000_000n * 35n) / 100n);
   });
 
-  it('distributes 60/40 for 2 participants', () => {
+  it('distributes 65/35 of prize pool after stakes are deducted for 2 participants', () => {
     const ranked = [makeRanked(1, addr(1)), makeRanked(2, addr(2))];
     const rewards = calculateRewards(ranked, pool, fee);
-    const prizePool = 950_000_000n;
     expect(rewards.length).toBe(2);
-    expect(rewards[0].rewardStroops).toBe((prizePool * 60n) / 100n);
-    expect(rewards[1].rewardStroops).toBe((prizePool * 40n) / 100n);
+    expect(rewards[0].rewardStroops).toBe(100_000_000n + (800_000_000n * 65n) / 100n);
+    expect(rewards[1].rewardStroops).toBe(100_000_000n + (800_000_000n * 35n) / 100n);
   });
 
   it('returns empty for 0 participants', () => {
     expect(calculateRewards([], pool, fee)).toEqual([]);
   });
 
-  it('total rewards do not exceed prize pool', () => {
+  it('total rewards do not exceed total pool', () => {
     const ranked = [makeRanked(1, addr(1)), makeRanked(2, addr(2)), makeRanked(3, addr(3))];
     const rewards = calculateRewards(ranked, pool, fee);
     const total = rewards.reduce((s, r) => s + r.rewardStroops, 0n);
-    const prizePool = (pool * 9500n) / 10_000n;
-    expect(total).toBeLessThanOrEqual(prizePool);
+    expect(total).toBe(pool);
   });
 });
 

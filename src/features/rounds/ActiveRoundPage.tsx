@@ -149,22 +149,30 @@ export const ActiveRoundPage = () => {
         setParticipantCount(current.participantCount);
       } catch {
         // Fallback to contract RPC
-        id = await getCurrentRound();
-        setRoundId(id);
-        if (id > 0) {
-          const r = await getRound(id);
-          console.log('📋 Round from contract:', { id, status: r.status, lock_time: Number(r.lock_time), end_time: Number(r.end_time), now: Math.floor(Date.now()/1000) });
-          setRound(r);
-          const cnt = await getParticipantCount(id);
-          setParticipantCount(cnt);
+        try {
+          id = await getCurrentRound();
+          setRoundId(id);
+          if (id > 0) {
+            const r = await getRound(id);
+            console.log('📋 Round from contract:', { id, status: r.status, lock_time: Number(r.lock_time), end_time: Number(r.end_time), now: Math.floor(Date.now()/1000) });
+            setRound(r);
+            const cnt = await getParticipantCount(id);
+            setParticipantCount(cnt);
+          }
+        } catch (rpcError) {
+          console.error('loadRound fallback RPC failed:', rpcError);
         }
       }
 
       if (id > 0 && walletAddress) {
-        console.log('🔍 Checking reward for:', { roundId: id, address: walletAddress });
-        const reward = await getReward(id, walletAddress);
-        console.log('💰 Reward from contract:', reward.toString(), 'stroops =', Number(reward) / 10_000_000, 'XLM');
-        setMyReward(Number(reward) / 10_000_000);
+        try {
+          console.log('🔍 Checking reward for:', { roundId: id, address: walletAddress });
+          const reward = await getReward(id, walletAddress);
+          console.log('💰 Reward from contract:', reward.toString(), 'stroops =', Number(reward) / 10_000_000, 'XLM');
+          setMyReward(Number(reward) / 10_000_000);
+        } catch (rewardError) {
+          console.error('loadRound reward RPC failed:', rewardError);
+        }
       }
 
       // Load live bets feed

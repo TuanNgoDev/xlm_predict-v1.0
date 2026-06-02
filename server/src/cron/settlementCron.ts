@@ -8,31 +8,6 @@ const logger = pino({ name: 'cron' });
 const MAX_RETRIES = 3;
 const retryCount = new Map<number, number>();
 
-async function processRound(round: settlementService.DbRound): Promise<void> {
-  const roundId = round.contract_round_id;
-  const attempts = retryCount.get(roundId) ?? 0;
-
-  if (attempts >= MAX_RETRIES) {
-    logger.error({ roundId, attempts }, 'Max retries exceeded — manual intervention required');
-    return;
-  }
-
-  try {
-    if (round.participant_count >= 2) {
-      await settlementService.settleRound(round);
-      logger.info({ roundId }, 'Round settled successfully');
-    } else {
-      await settlementService.cancelRound(round);
-      logger.info({ roundId }, 'Round cancelled (not enough participants)');
-    }
-    retryCount.delete(roundId);
-  } catch (err) {
-    const nextAttempt = attempts + 1;
-    retryCount.set(roundId, nextAttempt);
-    logger.error({ roundId, attempt: nextAttempt, err }, 'Round processing failed, will retry');
-  }
-}
-
 async function runSettlementTick(): Promise<void> {
   const start = Date.now();
   let settled = 0;

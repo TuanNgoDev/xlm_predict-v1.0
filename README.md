@@ -6,6 +6,8 @@
 
 Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — powered by on-chain Soroban smart contracts.
 
+[![CI/CD Pipeline Status](https://github.com/TuanNgoDev/XLMPredict/actions/workflows/ci.yml/badge.svg)](https://github.com/TuanNgoDev/XLMPredict/actions)
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://xlmpredict.vercel.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Rust](https://img.shields.io/badge/Rust-Soroban-CE422B?style=for-the-badge&logo=rust&logoColor=white)](https://soroban.stellar.org/)
@@ -16,7 +18,16 @@ Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — 
 
 ---
 
-**Live Demo:** [https://xlmpredict.up.railway.app/](https://xlmpredict.up.railway.app/)
+### 🚀 Production Submission Details
+
+*   **Vercel Live Demo (Frontend):** [https://xlmpredict.vercel.app](https://xlmpredict.vercel.app)
+*   **Railway API & Backend URL:** [https://xlmpredict.up.railway.app/](https://xlmpredict.up.railway.app/)
+*   **CI/CD Workflow:** Run via GitHub Actions (Type Checking, Building, Backend Vitest suite, and Property testing).
+*   **Mobile Responsiveness:** Yes (using dynamic layout configurations, Tailwind, flex-wrapping, and toggle sidebars).
+*   **Smart Contract ID (Stellar Testnet):** `CAZSI42RVHPPQBY3LKULN57R4EDPJKXDUXADXRMDCF4GDMVY7KLB2BBD`
+*   **Dynamic Token SAC Address (Testnet):** `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` (Native Stellar XLM SAC on Testnet, initialized dynamically on deployment).
+*   **Inter-Contract Calls:** Integrated direct calls to the official Native Stellar Asset Contract (SAC) token client (`token::Client`) for executing on-chain transfers, withdrawals, and escrow operations.
+*   **Commits Count:** 8+ meaningful development commits documenting contract refinements, backend migrations, cron stability, and frontend RPC fault-tolerance.
 
 </div>
 

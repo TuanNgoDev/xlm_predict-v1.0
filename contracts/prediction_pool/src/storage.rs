@@ -4,7 +4,7 @@ use soroban_sdk::{contracttype, Address};
 #[derive(Clone)]
 pub enum DataKey {
     Admin,
-    Treasury,
+    Token,
     RoundCounter,
     Round(u32),
     Bet(u32, Address),

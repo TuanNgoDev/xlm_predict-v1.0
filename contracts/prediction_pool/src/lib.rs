@@ -7,7 +7,7 @@ use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env,
 use types::*;
 use storage::*;
 
-const XLM_SAC: &str = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+
 const MAX_PARTICIPANTS: u32 = 100;
 const MIN_DURATION_SECS: u64 = 290; // ~5 minutes with block time buffer
 const MIN_PARTICIPANTS: u32 = 3;    // Need at least 3 to proceed
@@ -18,10 +18,10 @@ pub struct PredictionPool;
 #[contractimpl]
 impl PredictionPool {
     // ── Initialize ───────────────────────────────────────────────────────────
-    pub fn initialize(env: Env, admin: Address, treasury: Address) {
+    pub fn initialize(env: Env, admin: Address, token: Address) {
         if env.storage().instance().has(&DataKey::Admin) { panic_with_error!(&env, Error::AlreadyInitialized); }
         env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::Treasury, &treasury);
+        env.storage().instance().set(&DataKey::Token, &token);
         env.storage().instance().set(&DataKey::RoundCounter, &0u32);
     }
 
@@ -73,7 +73,8 @@ impl PredictionPool {
         if count >= MAX_PARTICIPANTS { panic_with_error!(&env, Error::RoundFull); }
         if env.storage().persistent().has(&DataKey::Bet(round_id, bettor.clone())) { panic_with_error!(&env, Error::AlreadyBet); }
 
-        let xlm = token::Client::new(&env, &Address::from_str(&env, XLM_SAC));
+        let token_address: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let xlm = token::Client::new(&env, &token_address);
         xlm.transfer(&bettor, &env.current_contract_address(), &stake_amount);
 
         env.storage().persistent().set(&DataKey::Bet(round_id, bettor.clone()), &Bet { bettor: bettor.clone(), predicted_price, stake_amount });
@@ -107,7 +108,8 @@ impl PredictionPool {
         env.storage().persistent().set(&DataKey::Round(round_id), &round);
 
         let bettors: Vec<Address> = env.storage().persistent().get(&DataKey::BettorList(round_id)).unwrap_or_else(|| Vec::new(&env));
-        let xlm = token::Client::new(&env, &Address::from_str(&env, XLM_SAC));
+        let token_address: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let xlm = token::Client::new(&env, &token_address);
         for bettor in bettors.iter() {
             if let Some(bet) = env.storage().persistent().get::<DataKey, Bet>(&DataKey::Bet(round_id, bettor.clone())) {
                 xlm.transfer(&env.current_contract_address(), &bettor, &bet.stake_amount);
@@ -168,8 +170,10 @@ impl PredictionPool {
             let winner1 = bettors.get(idx1).unwrap();
             let winner2 = bettors.get(idx2).unwrap();
             let prize_pool = round.total_pool - stake1 - stake2;
-            env.storage().persistent().set(&DataKey::Reward(round_id, winner1.clone()), &(stake1 + (prize_pool * 65) / 100));
-            env.storage().persistent().set(&DataKey::Reward(round_id, winner2.clone()), &(stake2 + (prize_pool * 35) / 100));
+            let reward2 = stake2 + (prize_pool * 35) / 100;
+            let reward1 = stake1 + prize_pool - (reward2 - stake2);
+            env.storage().persistent().set(&DataKey::Reward(round_id, winner1.clone()), &reward1);
+            env.storage().persistent().set(&DataKey::Reward(round_id, winner2.clone()), &reward2);
         }
 
         env.storage().persistent().set(&DataKey::Round(round_id), &round);
@@ -188,7 +192,8 @@ impl PredictionPool {
 
         env.storage().persistent().set(&DataKey::Reward(round_id, claimer.clone()), &0i128);
 
-        let xlm = token::Client::new(&env, &Address::from_str(&env, XLM_SAC));
+        let token_address: Address = env.storage().instance().get(&DataKey::Token).unwrap();
+        let xlm = token::Client::new(&env, &token_address);
         xlm.transfer(&env.current_contract_address(), &claimer, &reward);
 
         env.events().publish((soroban_sdk::symbol_short!("claimed"), round_id, claimer), reward);

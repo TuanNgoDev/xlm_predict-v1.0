@@ -6,7 +6,7 @@ const addr = (n: number) => `G${'A'.repeat(54)}${String(n).padStart(1, '0')}`;
 
 // Feature: xlm-predict-backend, Property 3: Reward Distribution Invariant
 describe('P3: reward distribution invariant', () => {
-  it('total rewards never exceed prize pool (after 5% fee)', () => {
+  it('total rewards always equal total pool', () => {
     fc.assert(
       fc.property(
         fc.array(
@@ -22,11 +22,9 @@ describe('P3: reward distribution invariant', () => {
             bettorAddress: addr(i),
             stakeAmountStroops: b.stakeAmountStroops,
           }));
-          const rewards = calculateRewards(ranked, totalPool, 500n);
+          const rewards = calculateRewards(ranked, totalPool);
           const totalRewards = rewards.reduce((s, r) => s + r.rewardStroops, 0n);
-          // Use same formula as calculateRewards: pool - floor(pool * fee / denom)
-          const prizePool = totalPool - (totalPool * 500n) / 10_000n;
-          return totalRewards <= prizePool;
+          return totalRewards === totalPool;
         }
       ),
       { numRuns: 1000 }

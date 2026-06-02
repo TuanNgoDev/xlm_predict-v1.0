@@ -30,7 +30,7 @@ describe('settlement ranking logic', () => {
     expect(ranked[2].bettorAddress).toBe(addr(3));
   });
 
-  it('calculates rewards correctly after 5% fee', () => {
+  it('calculates rewards correctly according to contract logic (no fee, 65/35 on remaining pool)', () => {
     const totalPool = 450_000_000n; // 45 XLM
     const ranked = [
       { rank: 1, bettorAddress: addr(1), stakeAmountStroops: 100_000_000n },
@@ -38,12 +38,10 @@ describe('settlement ranking logic', () => {
       { rank: 3, bettorAddress: addr(3), stakeAmountStroops: 150_000_000n },
     ];
 
-    const rewards = calculateRewards(ranked, totalPool, 500n);
-    const prizePool = totalPool - (totalPool * 500n) / 10_000n; // 427_500_000n
-
-    expect(rewards[0].rewardStroops).toBe((prizePool * 50n) / 100n);
-    expect(rewards[1].rewardStroops).toBe((prizePool * 30n) / 100n);
-    expect(rewards[2].rewardStroops).toBe((prizePool * 20n) / 100n);
+    const rewards = calculateRewards(ranked, totalPool);
+    expect(rewards.length).toBe(2);
+    expect(rewards[0].rewardStroops).toBe(197_500_000n);
+    expect(rewards[1].rewardStroops).toBe(252_500_000n);
   });
 
   it('skips processing when round is already Settled (idempotency)', () => {
