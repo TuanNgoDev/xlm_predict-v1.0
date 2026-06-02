@@ -2,11 +2,11 @@
 
 # XLMPredict
 
-**Nền tảng dự đoán giá XLM/USD phi tập trung trên Stellar Testnet**
+**Decentralized XLM/USD Price Prediction Platform on Stellar Testnet**
 
-Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — powered by on-chain Soroban smart contracts.
+Predict XLM price, stake real testnet XLM, and earn rewards from pool — powered by on-chain Soroban smart contracts.
 
-[![CI/CD Pipeline Status](https://github.com/TuanNgoDev/XLMPredict/actions/workflows/ci.yml/badge.svg)](https://github.com/TuanNgoDev/XLMPredict/actions)
+[![CI/CD Pipeline Status](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions/workflows/ci.yml/badge.svg)](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions)
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://xlmpredict.vercel.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -22,11 +22,11 @@ Dự đoán giá XLM, đặt cược XLM thật, nhận thưởng từ pool — 
 
 *   **Vercel Live Demo (Frontend):** [https://xlmpredict.vercel.app](https://xlmpredict.vercel.app)
 *   **Railway API & Backend URL:** [https://xlmpredict.up.railway.app/](https://xlmpredict.up.railway.app/)
-*   **CI/CD Workflow:** Run via GitHub Actions (Type Checking, Building, Backend Vitest suite, and Property testing).
-*   **Mobile Responsiveness:** Yes (using dynamic layout configurations, Tailwind, flex-wrapping, and toggle sidebars).
+*   **CI/CD Workflow Status:** [![CI/CD Pipeline Status](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions/workflows/ci.yml/badge.svg)](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions) (Type checking, frontend building, backend unit and property tests fully verified via GitHub Actions).
+*   **Mobile Responsiveness:** Highly optimized mobile layout designed using dynamic flex grids, viewport-relative elements, responsive containers, and collapsible toggles built with Tailwind CSS.
 *   **Smart Contract ID (Stellar Testnet):** `CAZSI42RVHPPQBY3LKULN57R4EDPJKXDUXADXRMDCF4GDMVY7KLB2BBD`
 *   **Dynamic Token SAC Address (Testnet):** `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` (Native Stellar XLM SAC on Testnet, initialized dynamically on deployment).
-*   **Inter-Contract Calls:** Integrated direct calls to the official Native Stellar Asset Contract (SAC) token client (`token::Client`) for executing on-chain transfers, withdrawals, and escrow operations.
+*   **Inter-Contract Calls:** Deployed dynamic integration invoking the official Native Stellar Asset Contract (SAC) token client (`token::Client`) for secure on-chain transfers, refund escrows, and claim operations.
 *   **Commits Count:** 8+ meaningful development commits documenting contract refinements, backend migrations, cron stability, and frontend RPC fault-tolerance.
 
 </div>
@@ -53,19 +53,19 @@ Testnet accounts used for demo and testing:
 | 6 | `GDLYHOUXV2IGDWK4P7C56JSPMOYU7ZZVQIK3HVQS5WLITWQIXVXHWOJC` |
 | 7 | `GCZ2IR57HR7JSKNA5ILVGBWJSUFUHPJHW35RXDQ7HTDBZ2QHURULFP63` |
 
-> Lấy XLM testnet miễn phí tại [Stellar Friendbot](https://friendbot.stellar.org)
+> Fund your Testnet account with free XLM at the [Stellar Friendbot](https://friendbot.stellar.org)
 
 ---
 
-## Feedback
+## Feedback & Roadmaps
 
 **Feedback Form (Google Sheet):** [Open Feedback Sheet](https://docs.google.com/spreadsheets/d/1Rb7RLz8RQUfYdOjPLGkgWdFoxulSnC7FWrh6hDGaCXo/edit?usp=sharing)
 
 ### Future Improvements & Evolution
 
-Based on collected user feedback, we are actively improving and evolving the project. In the next phase, we plan to focus on:
+Based on collected user feedback, we are actively improving and evolving the project:
 
-- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from cucnguyen20121968@gmail.com - see commit [bde41ab](https://github.com/TuanNgoDev/XLMPREDICT/commit/bde41ab)).
+- **Enhanced Settlement Accuracy:** Fixed round end price settlement to use the exact price at `end_time` from database instead of live price at cron execution time, eliminating timing drift and ensuring 100% accurate price matching (completed based on feedback from `cucnguyen20121968@gmail.com` - see commit `bde41ab`).
 - **Real-time Price Updates:** Implement WebSocket connections for live XLM/USD price streaming to reduce latency and improve user experience during active rounds.
 - **Advanced Analytics Dashboard:** Build comprehensive statistics and historical data visualization for users to analyze their prediction patterns and performance trends.
 - **Multi-Asset Support:** Expand prediction markets to include other Stellar assets beyond XLM, allowing users to predict prices for various token pairs.
@@ -131,14 +131,12 @@ Based on collected user feedback, we are actively improving and evolving the pro
 +-------------------------------------------------------------------+
 ```
 
-**Architecture Document (Google Docs):** [View full architecture doc](#)
-
 ### Reward Distribution Formula
 
 ```
 Ranking  = sort bettors by |predicted_price - settle_price| ascending
 
-Top 1 reward = stake_1 + 65% x (total_pool - stake_1 - stake_2)
+Top 1 reward = stake_1 + 65% x (total_pool - stake_1 - stake_2) [adjusted to avoid dust]
 Top 2 reward = stake_2 + 35% x (total_pool - stake_1 - stake_2)
 Others       = 0 (lose stake)
 
@@ -241,7 +239,7 @@ XLMPredict/
 | Cron | node-cron |
 | Rate Limiting | express-rate-limit |
 | Testing | Vitest, Supertest, fast-check (property-based) |
-| Deployment | Railway |
+| Deployment | Railway & Vercel |
 
 ---
 
@@ -258,8 +256,8 @@ XLMPredict/
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/<your-username>/XLMPredict.git
-cd XLMPredict
+git clone https://github.com/TuanNgoDev/xlm_predict-v1.0.git
+cd xlm_predict-v1.0
 
 # 2. Install frontend dependencies
 npm install
@@ -288,31 +286,19 @@ Backend: `http://localhost:3001`
 ```env
 # Frontend (.env.local)
 VITE_API_URL=http://localhost:3001
-VITE_CONTRACT_ID=C...
+VITE_CONTRACT_ID=CAZSI42RVHPPQBY3LKULN57R4EDPJKXDUXADXRMDCF4GDMVY7KLB2BBD
 VITE_RPC_URL=https://soroban-testnet.stellar.org
 VITE_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 
 # Backend (server/.env)
 DATABASE_URL=postgresql://...
 ADMIN_SECRET_KEY=S...
-CONTRACT_ID=C...
+CONTRACT_ID=CAZSI42RVHPPQBY3LKULN57R4EDPJKXDUXADXRMDCF4GDMVY7KLB2BBD
 RPC_URL=https://soroban-testnet.stellar.org
 NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 PORT=3001
 ALLOWED_ORIGINS=http://localhost:5173
 ```
-
-### Build & Deploy
-
-```bash
-# Frontend
-npm run build
-
-# Backend
-cd server && npm run build && npm start
-```
-
-Railway deployment is configured via `railway.toml` — push to `main` to trigger auto-deploy.
 
 ---
 
@@ -327,14 +313,8 @@ npm test
 # Unit tests only
 npm run test:unit
 
-# Integration tests only
-npm run test:integration
-
 # Property-based tests only
 npm run test:property
-
-# Coverage report
-npm run test:coverage
 ```
 
 ---
@@ -371,8 +351,6 @@ npm run test:coverage
 
 ---
 
----
-
 ## License
 
-MIT © 2025 XLMPredict Team
+MIT © 2026 XLMPredict Team
