@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="public/logo.png" alt="XLMPredict Logo" width="80" height="80" />
-
 # XLMPredict
 
 ### Decentralized XLM/USDT Price Prediction Platform on Stellar Testnet
@@ -9,8 +7,7 @@
 Predict XLM price movements, stake real testnet XLM, and earn rewards from a shared pool — powered by on-chain Soroban smart contracts with inter-contract token calls.
 
 [![CI/CD Pipeline](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions/workflows/ci.yml/badge.svg)](https://github.com/TuanNgoDev/xlm_predict-v1.0/actions/workflows/ci.yml)
-[![Vercel](https://img.shields.io/badge/Vercel-Live-000000?style=flat-square&logo=vercel&logoColor=white)](https://xlmpredict.vercel.app)
-[![Railway](https://img.shields.io/badge/Railway-API-0B0D0E?style=flat-square&logo=railway&logoColor=white)](https://xlmpredict.up.railway.app)
+[![Railway](https://img.shields.io/badge/Railway-Deployed-0B0D0E?style=flat-square&logo=railway&logoColor=white)](https://xlmpredict.up.railway.app)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Rust](https://img.shields.io/badge/Rust-Soroban-CE422B?style=flat-square&logo=rust&logoColor=white)](https://soroban.stellar.org)
@@ -43,8 +40,7 @@ Predict XLM price movements, stake real testnet XLM, and earn rewards from a sha
 
 | Service | URL |
 |---------|-----|
-| **Frontend (Vercel)** | [https://xlmpredict.vercel.app](https://xlmpredict.vercel.app) |
-| **Backend API (Railway)** | [https://xlmpredict.up.railway.app](https://xlmpredict.up.railway.app) |
+| **Live App (Railway)** | [https://xlmpredict.up.railway.app](https://xlmpredict.up.railway.app) |
 
 ---
 
@@ -135,7 +131,7 @@ token_client.transfer(&env.current_contract_address(), &bettor, &stake);
 └──────────────────────┬──────────────────────────────────┘
                        │ HTTPS
 ┌──────────────────────▼──────────────────────────────────┐
-│              Vite + React 19  (Vercel)                   │
+│              Vite + React 19  (Railway)                  │
 │  Pages: ActiveRound · History · Leaderboard · Positions  │
 │  Services: api.ts · contract.ts · oracle.ts              │
 └──────────────────────┬──────────────────────────────────┘
@@ -196,7 +192,7 @@ If participants < 3 → cancel_round, full on-chain refund
 | **Rate Limiting** | express-rate-limit (100 req/min per IP) |
 | **Testing** | Vitest, Supertest, fast-check (property-based) |
 | **CI/CD** | GitHub Actions |
-| **Deployment** | Vercel (frontend) + Railway (backend) |
+| **Deployment** | Railway (full-stack) |
 
 ---
 
