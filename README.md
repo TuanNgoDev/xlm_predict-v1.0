@@ -36,7 +36,6 @@ Predict XLM price movements, stake real testnet XLM, and earn rewards from a sha
 - [Environment Variables](#-environment-variables)
 - [Testing](#-testing)
 - [API Reference](#-api-reference)
-- [Testnet Accounts](#-testnet-accounts)
 
 ---
 
@@ -46,7 +45,6 @@ Predict XLM price movements, stake real testnet XLM, and earn rewards from a sha
 |---------|-----|
 | **Frontend (Vercel)** | [https://xlmpredict.vercel.app](https://xlmpredict.vercel.app) |
 | **Backend API (Railway)** | [https://xlmpredict.up.railway.app](https://xlmpredict.up.railway.app) |
-| **Demo Video** | [Google Drive — Full Walkthrough](https://drive.google.com/drive/folders/1GpEGhH7Rpmhcikr65NjJjwjufwjYALHV) |
 
 ---
 
@@ -367,22 +365,6 @@ Tests cover: reward ranking logic, settlement math, XLM conversion utilities, an
 | `GET` | `/api/users/:address/stats` | User statistics |
 | `GET` | `/api/rewards/:address/round/:id` | Reward details |
 | `POST` | `/api/rewards/record-claim` | Record reward claim |
-
----
-
-## 🧑‍🚀 Testnet Accounts
-
-Accounts used for demo and testing (funded via [Stellar Friendbot](https://friendbot.stellar.org)):
-
-| # | Address |
-|---|---------|
-| 1 | `GAEU3CLX3AZNNHB6ICCNMUN5VDMVRKJBP4CPQQGLRAXWKAFVBXAGLX32` |
-| 2 | `GDQAK5F3RXAHGNUZZGODDTUL4D2OFBQG26LOZF36URKXGDIQQEVBBA4L` |
-| 3 | `GCW74EQE6JLW446BLSOFWHAUDTZFBTZLLLBAA7JTRSXLBBWGXR4V4YD5` |
-| 4 | `GAVRZLSQR7CEHJCFSN6ENPFRFY3VVICZV2KZWXCIDNFXSE5BUIOLBFCB` |
-| 5 | `GBXANKIZ2P4JMKOY5LXSDNFX2VK5I2VKYFJWUNAPQA4JFO3V4PFZBCZT` |
-| 6 | `GDLYHOUXV2IGDWK4P7C56JSPMOYU7ZZVQIK3HVQS5WLITWQIXVXHWOJC` |
-| 7 | `GCZ2IR57HR7JSKNA5ILVGBWJSUFUHPJHW35RXDQ7HTDBZ2QHURULFP63` |
 
 ---
 
