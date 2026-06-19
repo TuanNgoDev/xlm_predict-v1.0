@@ -80,9 +80,20 @@ export const HistoryPage = () => {
         </div>
 
         {loading ? (
-          <div className="p-10 text-center text-gray-500">Loading...</div>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner} />
+            <span className={styles.loadingText}>Fetching round database...</span>
+          </div>
         ) : rounds.length === 0 ? (
-          <div className="p-10 text-center text-gray-500">No settled rounds yet.</div>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIconContainer}>
+              <Trophy className={styles.emptyIcon} />
+            </div>
+            <h3 className={styles.emptyTitle}>No Settled Rounds Yet</h3>
+            <p className={styles.emptyDescription}>
+              Once prediction rounds are completed and settled by the oracle, they will be listed here.
+            </p>
+          </div>
         ) : (
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
@@ -90,17 +101,17 @@ export const HistoryPage = () => {
                 <tr className={styles.tableHead}>
                   <th className={styles.th}>Round</th>
                   <th className={styles.th}>
-                    <span className="flex items-center gap-1"><Users size={12} /> Participants</span>
+                    <span className={styles.headerIconWrapper}><Users size={12} /> Participants</span>
                   </th>
                   <th className={styles.th}>
-                    <span className="flex items-center gap-1"><DollarSign size={12} /> Oracle Price</span>
+                    <span className={styles.headerIconWrapper}><DollarSign size={12} /> Oracle Price</span>
                   </th>
                   <th className={styles.th}>Pool (XLM)</th>
                   <th className={styles.th}>
-                    <span className="flex items-center gap-1"><Trophy size={12} className="text-yellow-400" /> 🥇 Top 1</span>
+                    <span className={styles.headerIconWrapper}><Trophy size={12} className={styles.goldTrophy} /> 🥇 Top 1</span>
                   </th>
                   <th className={styles.th}>
-                    <span className="flex items-center gap-1"><Trophy size={12} className="text-gray-400" /> 🥈 Top 2</span>
+                    <span className={styles.headerIconWrapper}><Trophy size={12} className={styles.silverTrophy} /> 🥈 Top 2</span>
                   </th>
                   <th className={styles.th}>End Time</th>
                   <th className={styles.th}>Status</th>
@@ -143,7 +154,7 @@ export const HistoryPage = () => {
                             <span className={styles.winnerAddr}>{shortAddr(top1.bettorAddress)}</span>
                             <span className={styles.winnerReward}>+{top1.rewardXlm.toFixed(2)} XLM</span>
                           </div>
-                        ) : <span className="text-gray-600">—</span>}
+                        ) : <span className={styles.mutedDash}>—</span>}
                       </td>
 
                       {/* Top 2 */}
@@ -153,7 +164,7 @@ export const HistoryPage = () => {
                             <span className={styles.winnerAddr}>{shortAddr(top2.bettorAddress)}</span>
                             <span className={styles.winnerReward2}>+{top2.rewardXlm.toFixed(2)} XLM</span>
                           </div>
-                        ) : <span className="text-gray-600">—</span>}
+                        ) : <span className={styles.mutedDash}>—</span>}
                       </td>
 
                       {/* End time UTC+7 */}
@@ -182,7 +193,7 @@ export const HistoryPage = () => {
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className={styles.arrowIcon} />
               </button>
               <span className={cn(styles.pageButton, styles.activePageButton)}>{page}</span>
               <button
@@ -190,7 +201,7 @@ export const HistoryPage = () => {
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className={styles.arrowIcon} />
               </button>
             </div>
           </div>

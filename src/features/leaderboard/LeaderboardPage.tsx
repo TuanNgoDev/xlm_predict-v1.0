@@ -51,7 +51,10 @@ export const LeaderboardPage = () => {
 
       <div className={cn('glass-card', styles.leaderboardTableContainer)}>
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading leaderboard...</div>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner} />
+            <span className={styles.loadingText}>Fetching oracle standings...</span>
+          </div>
         ) : (
           <div className={styles.tableContainer}>
             <table className={styles.table}>
@@ -96,7 +99,21 @@ export const LeaderboardPage = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-gray-500">No data yet</td>
+                    <td colSpan={6}>
+                      <div className={styles.emptyState}>
+                        <div className={styles.emptyIconContainer}>
+                          <Trophy className={styles.emptyIcon} />
+                        </div>
+                        <h3 className={styles.emptyTitle}>
+                          {entries.length === 0 ? 'No Leaderboard Data' : 'No Results Found'}
+                        </h3>
+                        <p className={styles.emptyDescription}>
+                          {entries.length === 0
+                            ? 'Be the first to predict and claim the top spot!'
+                            : 'No wallets match your filter search.'}
+                        </p>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
