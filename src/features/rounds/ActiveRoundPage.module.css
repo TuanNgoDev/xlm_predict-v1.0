@@ -966,6 +966,78 @@
   -webkit-backdrop-filter: var(--glass-blur-sm);
 }
 
+/* ── Status panels (settled / cancelled inline notifications) ── */
+.statusPanel {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.statusPanelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statusPanelTitle {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.statusPanelNote {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+}
+
+.statusPanelText {
+  font-size: 13px;
+  color: var(--color-on-surface-variant);
+  line-height: 1.5;
+}
+
+.statusPanelWin {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.statusPanelWinText {
+  font-size: 13px;
+  color: #34d399;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+/* ── Phase panel (locked / waiting / ended info box) ── */
+.phasePanel {
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.phasePanelTitle {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.phasePanelText {
+  font-size: 13px;
+  color: var(--color-on-surface-variant);
+  line-height: 1.55;
+  opacity: 0.75;
+}
+
+
 .infoTitleArea {
   display: flex;
   align-items: center;
@@ -1141,4 +1213,158 @@
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.15);
   flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   LIVE FEED CARD (Left column table)
+   ═══════════════════════════════════════════════ */
+.liveFeedCard {
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg) !important;
+  border: 1px solid rgba(34, 211, 238, 0.1) !important;
+}
+
+.liveFeedHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.liveFeedTitle {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-on-surface);
+  flex: 1;
+}
+
+.liveFeedCount {
+  font-size: 10px;
+  color: var(--color-on-surface-variant);
+  font-family: var(--font-mono);
+  opacity: 0.5;
+  font-weight: 600;
+}
+
+/* ── Empty state ── */
+.liveFeedEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 32px 0;
+}
+
+.liveFeedEmptyIcon {
+  font-size: 28px;
+  line-height: 1;
+  filter: grayscale(0.3);
+}
+
+.liveFeedEmptyText {
+  font-size: 12px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.6;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.liveFeedEmptySubtext {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+  opacity: 0.35;
+  font-weight: 500;
+}
+
+/* ── Table ── */
+.liveFeedTableWrap {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.15) transparent;
+}
+
+.liveFeedTable {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.liveFeedThead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.liveFeedTh {
+  text-align: left;
+  padding-bottom: 8px;
+  font-size: 9px;
+  color: var(--color-on-surface-variant);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.liveFeedThRight {
+  text-align: right;
+}
+
+.liveFeedRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.035);
+  transition: background 0.15s;
+}
+
+.liveFeedRow:hover {
+  background: rgba(34, 211, 238, 0.03);
+}
+
+.liveFeedRow:last-child {
+  border-bottom: none;
+}
+
+.liveFeedTdIdx {
+  padding: 9px 8px 9px 0;
+  color: var(--color-on-surface-variant);
+  opacity: 0.4;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.liveFeedTdWallet {
+  padding: 9px 8px;
+  font-family: var(--font-mono);
+  color: rgba(34, 211, 238, 0.75);
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.liveFeedTdPrice {
+  padding: 9px 8px;
+  text-align: right;
+  color: #e8eaf6;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.liveFeedTdStake {
+  padding: 9px 8px;
+  text-align: right;
+  color: #34d399;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.liveFeedTdTime {
+  padding: 9px 0 9px 8px;
+  text-align: right;
+  color: var(--color-on-surface-variant);
+  opacity: 0.5;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
 }

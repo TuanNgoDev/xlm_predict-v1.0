@@ -361,23 +361,38 @@ export const ActiveRoundPage = () => {
         </div>
         <div className={styles.breadcrumbRight}>
           {roundId > 0 && (
-            <div className={cn(
-              'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border',
-              phase === 'locked' ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400' :
-              phase === 'waiting' ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' :
-              phase === 'settled' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
-              phase === 'cancelled' ? 'bg-red-500/10 border-red-500/30 text-red-400' :
-              phase === 'ended' ? 'bg-gray-500/10 border-gray-500/30 text-gray-400' :
-              'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-            )}>
-              <span className={cn(
-                'w-1.5 h-1.5 rounded-full',
-                phase === 'locked' ? 'bg-yellow-400' :
-                phase === 'waiting' ? 'bg-orange-400 animate-pulse' :
-                phase === 'settled' ? 'bg-blue-400' :
-                phase === 'cancelled' || phase === 'ended' ? 'bg-gray-400' :
-                'bg-emerald-400 animate-pulse'
-              )} />
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '4px 12px', borderRadius: '9999px',
+              fontSize: '10px', fontWeight: 800, letterSpacing: '0.12em',
+              border: '1px solid',
+              background: phase === 'locked' ? 'rgba(234,179,8,0.1)'
+                : phase === 'waiting' ? 'rgba(249,115,22,0.1)'
+                : phase === 'settled' ? 'rgba(59,130,246,0.1)'
+                : phase === 'cancelled' ? 'rgba(239,68,68,0.1)'
+                : phase === 'ended' ? 'rgba(107,114,128,0.1)'
+                : 'rgba(16,185,129,0.1)',
+              borderColor: phase === 'locked' ? 'rgba(234,179,8,0.3)'
+                : phase === 'waiting' ? 'rgba(249,115,22,0.3)'
+                : phase === 'settled' ? 'rgba(59,130,246,0.3)'
+                : phase === 'cancelled' ? 'rgba(239,68,68,0.3)'
+                : phase === 'ended' ? 'rgba(107,114,128,0.3)'
+                : 'rgba(52,211,153,0.3)',
+              color: phase === 'locked' ? '#fbbf24'
+                : phase === 'waiting' ? '#fb923c'
+                : phase === 'settled' ? '#60a5fa'
+                : phase === 'cancelled' ? '#f87171'
+                : phase === 'ended' ? '#9ca3af'
+                : '#34d399',
+            }}>
+              <span style={{
+                width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
+                background: phase === 'locked' ? '#fbbf24'
+                  : phase === 'waiting' ? '#fb923c'
+                  : phase === 'settled' ? '#60a5fa'
+                  : phase === 'cancelled' || phase === 'ended' ? '#9ca3af'
+                  : '#34d399',
+              }} />
               {phase === 'locked' ? 'LOCKED' : phase === 'waiting' ? 'WAITING' : phase === 'settled' ? 'SETTLED' : phase === 'cancelled' ? 'CANCELLED' : phase === 'ended' ? 'ENDED' : 'LIVE'}
             </div>
           )}
@@ -431,21 +446,18 @@ export const ActiveRoundPage = () => {
 
           {/* Settled result */}
           {phase === 'settled' && settlePrice && (
-            <div className="glass-card p-4 border border-blue-500/20 bg-blue-500/5">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle size={16} className="text-blue-400" />
-                <span className="text-sm font-bold text-blue-300">Round Settled</span>
+            <div className={styles.statusPanel} style={{ borderColor: 'rgba(59,130,246,0.2)', background: 'rgba(59,130,246,0.05)' }}>
+              <div className={styles.statusPanelRow}>
+                <CheckCircle size={15} style={{ color: '#60a5fa', flexShrink: 0 }} />
+                <span className={styles.statusPanelTitle} style={{ color: '#93c5fd' }}>Round Settled</span>
               </div>
-              <p className="text-sm text-gray-400">
-                Final price: <span className="text-white font-bold">{formatPrice(settlePrice)}</span>
+              <p className={styles.statusPanelText}>
+                Final price: <strong style={{ color: '#fff' }}>{formatPrice(settlePrice)}</strong>
               </p>
               {myReward > 0 && (
-                <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                  <p className="text-sm text-emerald-300 font-bold">
-                    🎉 You won {myReward.toFixed(2)} XLM!
-                  </p>
-                  <button onClick={handleClaim} disabled={loading}
-                    className="mt-2 w-full py-2 rounded-lg bg-emerald-500 text-black text-sm font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors">
+                <div className={styles.statusPanelWin}>
+                  <p className={styles.statusPanelWinText}>🎉 You won {myReward.toFixed(2)} XLM!</p>
+                  <button onClick={handleClaim} disabled={loading} className={cn(styles.submitButton, loading && styles.submitDisabled)} style={{ marginTop: '10px' }}>
                     {loading ? 'Claiming...' : 'Claim Reward'}
                   </button>
                 </div>
@@ -455,11 +467,11 @@ export const ActiveRoundPage = () => {
 
           {/* Cancelled */}
           {phase === 'cancelled' && (
-            <div className="glass-card p-4 border border-red-500/20 bg-red-500/5">
-              <div className="flex items-center gap-2">
-                <XCircle size={16} className="text-red-400" />
-                <span className="text-sm font-bold text-red-300">Round Cancelled</span>
-                <span className="text-xs text-gray-500">— Less than 2 participants. Stakes refunded.</span>
+            <div className={styles.statusPanel} style={{ borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}>
+              <div className={styles.statusPanelRow}>
+                <XCircle size={15} style={{ color: '#f87171', flexShrink: 0 }} />
+                <span className={styles.statusPanelTitle} style={{ color: '#fca5a5' }}>Round Cancelled</span>
+                <span className={styles.statusPanelNote}>— Less than 3 participants. Stakes refunded.</span>
               </div>
             </div>
           )}
@@ -487,28 +499,31 @@ export const ActiveRoundPage = () => {
           </div>
 
           {/* Live Feed — left column, always visible */}
-          <div className={cn('glass-card', styles.infoCard)}>
-            <div className={styles.infoTitleArea}>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-              <h4 className={styles.infoTitle}>Live Feed</h4>
-              <span className="ml-auto text-xs text-gray-600 font-mono">{liveBets.length} bet{liveBets.length !== 1 ? 's' : ''}</span>
+          <div className={cn('glass-card', styles.liveFeedCard)}>
+            <div className={styles.liveFeedHeader}>
+              <span className={styles.liveFeedPing}>
+                <span className={styles.pingInner} />
+                <span className={styles.pingDot} />
+              </span>
+              <h4 className={styles.liveFeedTitle}>Live Feed</h4>
+              <span className={styles.liveFeedCount}>{liveBets.length} bet{liveBets.length !== 1 ? 's' : ''}</span>
             </div>
             {liveBets.length === 0 ? (
-              <div className="flex flex-col items-center gap-1 py-6">
-                <span className="text-3xl"></span>
-                <p className="text-xs text-gray-500 mt-1">No bets yet this round</p>
-                <p className="text-xs text-gray-600">Be the first to predict!</p>
+              <div className={styles.liveFeedEmpty}>
+                <span className={styles.liveFeedEmptyIcon}>🎯</span>
+                <p className={styles.liveFeedEmptyText}>No bets yet this round</p>
+                <p className={styles.liveFeedEmptySubtext}>Be the first to predict!</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+              <div className={styles.liveFeedTableWrap}>
+                <table className={styles.liveFeedTable}>
                   <thead>
-                    <tr className="border-b border-white/5">
-                      <th className="text-left pb-2 text-gray-600 font-semibold uppercase tracking-wider">#</th>
-                      <th className="text-left pb-2 text-gray-600 font-semibold uppercase tracking-wider">Wallet</th>
-                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Predicted</th>
-                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Stake</th>
-                      <th className="text-right pb-2 text-gray-600 font-semibold uppercase tracking-wider">Time (UTC+7)</th>
+                    <tr className={styles.liveFeedThead}>
+                      <th className={styles.liveFeedTh}>#</th>
+                      <th className={styles.liveFeedTh}>Wallet</th>
+                      <th className={cn(styles.liveFeedTh, styles.liveFeedThRight)}>Predicted</th>
+                      <th className={cn(styles.liveFeedTh, styles.liveFeedThRight)}>Stake</th>
+                      <th className={cn(styles.liveFeedTh, styles.liveFeedThRight)}>Time (UTC+7)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -518,14 +533,14 @@ export const ActiveRoundPage = () => {
                       const pad = (n: number) => String(n).padStart(2, '0');
                       const timeStr = `${pad(utc7.getUTCHours())}:${pad(utc7.getUTCMinutes())}:${pad(utc7.getUTCSeconds())}`;
                       return (
-                        <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
-                          <td className="py-2 text-gray-600">{i + 1}</td>
-                          <td className="py-2 font-mono text-gray-300">
+                        <tr key={i} className={styles.liveFeedRow}>
+                          <td className={styles.liveFeedTdIdx}>{i + 1}</td>
+                          <td className={styles.liveFeedTdWallet}>
                             {bet.bettorAddress.slice(0, 6)}...{bet.bettorAddress.slice(-4)}
                           </td>
-                          <td className="py-2 text-right text-white font-bold">${bet.predictedPriceUsd.toFixed(4)}</td>
-                          <td className="py-2 text-right text-emerald-400 font-bold">{bet.stakeAmountXlm.toFixed(0)} XLM</td>
-                          <td className="py-2 text-right text-gray-500 font-mono">{timeStr}</td>
+                          <td className={styles.liveFeedTdPrice}>${bet.predictedPriceUsd.toFixed(4)}</td>
+                          <td className={styles.liveFeedTdStake}>{bet.stakeAmountXlm.toFixed(0)} XLM</td>
+                          <td className={styles.liveFeedTdTime}>{timeStr}</td>
                         </tr>
                       );
                     })}
@@ -535,6 +550,7 @@ export const ActiveRoundPage = () => {
             )}
           </div>
         </div>
+
 
         {/* ── RIGHT: Prediction Panel ── */}
         <div className={styles.predictionBox}>
@@ -701,29 +717,29 @@ export const ActiveRoundPage = () => {
           ) : (
             /* CASE 3: Round locked / ended / settled / cancelled */
             <div className={cn('glass-card', styles.predictCard)}>
-              <div className="p-4 text-center text-gray-500 text-sm space-y-2">
+              <div className={styles.phasePanel}>
                 {phase === 'locked' && (
                   <>
-                    <p className="text-yellow-400 font-bold">🔒 Betting Locked</p>
-                    <p>Round ends in <span className="text-white font-mono">{formatCountdown(timeToEnd)}</span></p>
+                    <p className={styles.phasePanelTitle} style={{ color: '#fbbf24' }}>🔒 Betting Locked</p>
+                    <p className={styles.phasePanelText}>Round ends in <span style={{ color: '#fff', fontFamily: 'var(--font-mono)' }}>{formatCountdown(timeToEnd)}</span></p>
                   </>
                 )}
                 {phase === 'waiting' && (
                   <>
-                    <p className="text-orange-400 font-bold">⏳ Waiting for Participants</p>
-                    <p className="text-xs">Only {participantCount}/3 joined. Round is being cancelled — stakes will be refunded to your wallet automatically.</p>
+                    <p className={styles.phasePanelTitle} style={{ color: '#fb923c' }}>⏳ Waiting for Participants</p>
+                    <p className={styles.phasePanelText}>Only {participantCount}/3 joined. Round is being cancelled — stakes will be refunded to your wallet automatically.</p>
                   </>
                 )}
-                {phase === 'ended' && <p>⏳ Round ended. Awaiting oracle settlement...</p>}
+                {phase === 'ended' && <p className={styles.phasePanelText}>⏳ Round ended. Awaiting oracle settlement...</p>}
                 {phase === 'settled' && settlePrice && (
                   <>
-                    <p className="text-blue-400 font-bold">✅ Round Settled</p>
-                    <p>Final price: <span className="text-white font-bold">{formatPrice(settlePrice)}</span></p>
+                    <p className={styles.phasePanelTitle} style={{ color: '#60a5fa' }}>✅ Round Settled</p>
+                    <p className={styles.phasePanelText}>Final price: <strong style={{ color: '#fff' }}>{formatPrice(settlePrice)}</strong></p>
                     {myReward > 0 && (
-                      <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                        <p className="text-emerald-300 font-bold">🎉 You won {myReward.toFixed(2)} XLM!</p>
+                      <div className={styles.statusPanelWin}>
+                        <p className={styles.statusPanelWinText}>🎉 You won {myReward.toFixed(2)} XLM!</p>
                         <button onClick={handleClaim} disabled={loading}
-                          className="mt-2 w-full py-2 rounded-lg bg-emerald-500 text-black text-sm font-bold hover:bg-emerald-400 disabled:opacity-50 transition-colors">
+                          className={cn(styles.submitButton, loading && styles.submitDisabled)} style={{ marginTop: '10px' }}>
                           {loading ? 'Claiming...' : 'Claim Reward'}
                         </button>
                       </div>
@@ -732,8 +748,8 @@ export const ActiveRoundPage = () => {
                 )}
                 {phase === 'cancelled' && (
                   <>
-                    <p className="text-red-400 font-bold">❌ Round Cancelled</p>
-                    <p className="text-xs">Less than 3 participants. Stakes refunded.</p>
+                    <p className={styles.phasePanelTitle} style={{ color: '#f87171' }}>❌ Round Cancelled</p>
+                    <p className={styles.phasePanelText}>Less than 3 participants. Stakes refunded.</p>
                   </>
                 )}
               </div>
@@ -743,7 +759,7 @@ export const ActiveRoundPage = () => {
           {/* How it works */}
           <div className={cn('glass-card', styles.infoCard)}>
             <div className={styles.infoTitleArea}>
-              <Info className={cn('w-5 h-5', styles.infoIcon)} strokeWidth={3} />
+              <Info style={{ width: '18px', height: '18px' }} className={styles.infoIcon} strokeWidth={3} />
               <h4 className={styles.infoTitle}>How it works</h4>
             </div>
             <ul className={styles.infoList}>

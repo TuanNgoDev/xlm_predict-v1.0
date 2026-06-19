@@ -30,7 +30,7 @@ export const recordBetSchema = z.object({
   bettorAddress: stellarAddressSchema,
   predictedPriceMicroUsd: predictedPriceSchema,
   stakeAmountStroops: stakeAmountSchema,
-  txHash: z.string().length(64).optional(),
+  txHash: z.string().min(1).optional(),
 });
 
 export const recordRoundSchema = z.object({
