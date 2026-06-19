@@ -501,10 +501,16 @@ export const ActiveRoundPage = () => {
           {/* Live Feed — left column, always visible */}
           <div className={cn('glass-card', styles.liveFeedCard)}>
             <div className={styles.liveFeedHeader}>
-              <span className={styles.liveFeedPing}>
-                <span className={styles.pingInner} />
-                <span className={styles.pingDot} />
-              </span>
+              <span style={{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#34d399',
+                boxShadow: '0 0 6px rgba(52, 211, 153, 0.6)',
+                flexShrink: 0,
+                animation: 'pulse 2s ease-in-out infinite',
+              }} />
               <h4 className={styles.liveFeedTitle}>Live Feed</h4>
               <span className={styles.liveFeedCount}>{liveBets.length} bet{liveBets.length !== 1 ? 's' : ''}</span>
             </div>
