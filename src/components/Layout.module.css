@@ -1,16 +1,23 @@
+/* ═══════════════════════════════════════════════
+   LAYOUT — WEB3 PREMIUM
+   ═══════════════════════════════════════════════ */
+
 .container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
 }
 
 .main {
   flex: 1;
-  padding: 20px 24px;
+  padding: 24px 28px;
   overflow: hidden;
   width: 100%;
+  animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
+/* ── Ambient background orbs ── */
 .glowContainer {
   position: fixed;
   inset: 0;
@@ -21,32 +28,32 @@
 
 .glowOne {
   position: fixed;
-  bottom: 0;
-  right: 0;
-  padding: 32px;
-  opacity: 0.2;
+  bottom: -80px;
+  right: -80px;
+  opacity: 1;
 }
 
 .glowOneInner {
-  width: 256px;
-  height: 256px;
-  background: rgba(0, 209, 255, 0.2);
-  filter: blur(100px);
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
+  filter: blur(60px);
   border-radius: 9999px;
+  animation: floatY 8s ease-in-out infinite;
 }
 
 .glowTwo {
   position: fixed;
-  top: 60px;
-  left: 0;
-  padding: 32px;
-  opacity: 0.1;
+  top: 50px;
+  left: -100px;
+  opacity: 1;
 }
 
 .glowTwoInner {
-  width: 384px;
-  height: 384px;
-  background: rgba(147, 51, 234, 0.2);
-  filter: blur(120px);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.10) 0%, transparent 70%);
+  filter: blur(80px);
   border-radius: 9999px;
+  animation: floatY 11s ease-in-out infinite reverse;
 }
