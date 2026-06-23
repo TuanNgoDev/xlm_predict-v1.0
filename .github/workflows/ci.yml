@@ -56,3 +56,22 @@ jobs:
 
       - name: Build Frontend Application
         run: npm run build
+
+  # Job 3: Test and Build Soroban Smart Contract
+  contract-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+
+      - name: Run Contract Tests and Build
+        run: |
+          cd contracts/prediction_pool
+          cargo check --target wasm32-unknown-unknown
+          cargo test
+          cargo build --target wasm32-unknown-unknown --release

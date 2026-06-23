@@ -68,6 +68,7 @@ Automated via **GitHub Actions** on every push and pull request to `main`.
 |-----|-------|
 | `backend-test` | TypeScript type-check → Unit tests (Vitest) → Property-based tests (fast-check) |
 | `frontend-build` | Install dependencies → Production build (Vite) |
+| `contract-test` | Setup Rust toolchain → Cargo check (WASM) → Cargo unit tests → Production WASM build |
 
 **Workflow file:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
@@ -255,7 +256,8 @@ XLMPredict/
         └── src/
             ├── lib.rs                # Contract entry point
             ├── types.rs              # Round, Bet, Error types
-            └── storage.rs            # DataKey definitions
+            ├── storage.rs            # DataKey definitions
+            └── test.rs               # Unit tests verifying contract flow
 ```
 
 ---
@@ -324,10 +326,11 @@ ALLOWED_ORIGINS=http://localhost:5173
 
 ## 🧪 Testing
 
+### Backend & Property-Based Testing
 ```bash
 cd server
 
-# Run all tests
+# Run all backend tests
 npm test
 
 # Unit tests only
@@ -337,7 +340,17 @@ npm run test:unit
 npm run test:property
 ```
 
-Tests cover: reward ranking logic, settlement math, XLM conversion utilities, and property invariants via `fast-check`.
+Backend tests cover: reward ranking logic, settlement math, XLM conversion utilities, and property invariants via `fast-check`.
+
+### Smart Contract Unit Testing
+```bash
+cd contracts/prediction_pool
+
+# Run contract tests
+cargo test
+```
+
+Smart contract tests cover: contract initialization, round creation, betting validation, round cancellation/refund flow, round settlement, and correct rank-based reward distribution on-chain.
 
 ---
 

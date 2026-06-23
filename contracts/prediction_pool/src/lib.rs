@@ -3,6 +3,9 @@
 mod types;
 mod storage;
 
+#[cfg(test)]
+mod test;
+
 use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, Env, Vec};
 use types::*;
 use storage::*;
